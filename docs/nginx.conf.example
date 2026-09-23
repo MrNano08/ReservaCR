@@ -1,0 +1,26 @@
+# Sustituye el dominio y las rutas. Termina HTTPS antes de habilitar COOKIE_SECURE=true.
+server {
+    listen 80;
+    server_name tu-dominio.example;
+    root /srv/reservacr/frontend/dist;
+    index index.html;
+    client_max_body_size 6m;
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:3000;
+        add_header X-Content-Type-Options nosniff always;
+    }
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
