@@ -14,6 +14,7 @@ import Layout from "./components/Layout";
 import { Loading, Empty } from "./components/UI";
 import Catalog from "./pages/Catalog";
 import Auth from "./pages/Auth";
+import PasswordRecovery from "./pages/PasswordRecovery";
 import BusinessDetail from "./pages/BusinessDetail";
 import Bookings from "./pages/Bookings";
 import Owner from "./pages/Owner";
@@ -55,6 +56,8 @@ export default function App() {
             <Route index element={<Catalog />} />
             <Route path="ingresar" element={<Auth />} />
             <Route path="registro" element={<Auth register />} />
+            <Route path="recuperar-contrasena" element={<PasswordRecovery />} />
+            <Route path="restablecer-contrasena" element={<PasswordRecovery reset />} />
             <Route path="negocios/:id" element={<BusinessDetail />} />
             <Route element={<Protected roles={["CLIENT", "BUSINESS"]} />}>
               <Route path="reservas" element={<Bookings />} />
