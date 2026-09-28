@@ -48,6 +48,18 @@ export class AuthController {
     });
     return result.user;
   }
+  @Post("forgot-password")
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  forgot(@Body() body: unknown) {
+    const d = parse(z.object({ email }).strict(), body);
+    return this.auth.requestPasswordReset(d.email);
+  }
+  @Post("reset-password")
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  reset(@Body() body: unknown) {
+    const d = parse(z.object({ token: z.string().regex(/^[a-f0-9]{64}$/), password: z.string().min(10).max(72) }).strict(), body);
+    return this.auth.resetPassword(d.token, d.password);
+  }
   @Post("login")
   @Throttle({ default: { limit: 12, ttl: 60000 } })
   async login(

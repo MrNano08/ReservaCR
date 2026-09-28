@@ -27,6 +27,15 @@ export class Session {
   @ManyToOne(() => User, { onDelete: "CASCADE" }) @JoinColumn() user!: User;
   @Column() expiresAt!: Date;
 }
+@Entity("password_resets")
+export class PasswordReset {
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column() userId!: string;
+  @ManyToOne(() => User, { onDelete: "CASCADE" }) @JoinColumn() user!: User;
+  @Column({ length: 64, unique: true }) tokenHash!: string;
+  @Column() expiresAt!: Date;
+  @CreateDateColumn() createdAt!: Date;
+}
 @Entity("categories")
 export class Category {
   @PrimaryGeneratedColumn("uuid") id!: string;
@@ -137,6 +146,7 @@ export class AuditLog {
 export const entities = [
   User,
   Session,
+  PasswordReset,
   Category,
   Business,
   Service,

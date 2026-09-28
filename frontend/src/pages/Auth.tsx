@@ -130,6 +130,7 @@ export default function Auth({ register = false }: { register?: boolean }) {
             <ArrowRight size={18} />
           </button>
         </form>
+        {!register && <p className="auth-link"><Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link></p>}
         <p className="auth-link">
           {register ? "¿Ya tienes cuenta?" : "¿Todavía no tienes cuenta?"}{" "}
           <Link to={register ? "/ingresar" : "/registro"}>
