@@ -9,91 +9,12 @@ import nodemailer from "nodemailer";
 import { db } from "../database/data-source";
 import { Notification, Booking, User, Business } from "../database/entities";
 import { config } from "../common/config";
-import { formatCR } from "../common/time";
-
-const escapeHtml = (value: string) =>
-  value.replace(/[&<>"']/g, (character) =>
-    ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    })[character]!,
-  );
-
-function bookingEmail(job: Notification) {
-  const [
-    service = "",
-    business = "",
-    date = "",
-    code = "",
-    status = "",
-    ...rest
-  ] = job.body.split("\n");
-
-  const cancelled = status.toLowerCase().includes("cancelada");
-  const reason = rest.find((line) => line.startsWith("Motivo: "));
-  const link = escapeHtml(
-    new URL("/reservas", config.WEB_ORIGIN).toString(),
-  );
-
-  const row = (label: string, value: string) =>
-    `<tr>
-      <td style="padding:9px 0;color:#a0afa4;font-size:14px;vertical-align:top;">${label}</td>
-      <td style="padding:9px 0;color:#edf1eb;font-size:14px;text-align:right;vertical-align:top;">${escapeHtml(value)}</td>
-    </tr>`;
-
-  return `<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-</head>
-<body style="margin:0;padding:32px 12px;background:#101713;font-family:Arial,Helvetica,sans-serif;color:#edf1eb;">
-  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;border-collapse:collapse;">
-    <tr>
-      <td style="padding:0 4px 20px;font-size:22px;font-weight:bold;color:#c4f29a;">ReservaCR</td>
-    </tr>
-    <tr>
-      <td style="background:#18221c;border:1px solid #2c3a30;border-radius:18px;padding:36px 32px;">
-        <h1 style="margin:0 0 14px;font-size:28px;line-height:1.2;color:#edf1eb;">${cancelled ? "Reserva cancelada" : "Reserva confirmada"}</h1>
-        <p style="margin:0 0 24px;font-size:16px;line-height:1.5;color:#a0afa4;">${cancelled ? "Tu reserva fue cancelada. Aquí tienes los detalles:" : "Tu reserva está confirmada. Aquí tienes los detalles:"}</p>
-
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #2c3a30;border-bottom:1px solid #2c3a30;">
-          ${row("Servicio", service)}
-          ${row("Negocio", business)}
-          ${row("Fecha y hora", date)}
-          ${row("Código", code.replace(/^Código: /, ""))}
-          ${reason ? row("Motivo", reason.slice(8)) : ""}
-        </table>
-
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:28px;">
-          <tr>
-            <td align="center" bgcolor="#c4f29a" style="border-radius:12px;">
-              <a href="${link}" style="display:block;padding:17px 20px;font-size:16px;font-weight:bold;color:#17230f;text-decoration:none;">Ver mis reservas</a>
-            </td>
-          </tr>
-        </table>
-
-        <p style="margin:22px 0 0;font-size:13px;line-height:1.5;color:#a0afa4;">Puedes consultar el estado de tus reservas en ReservaCR.</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:20px 4px;color:#a0afa4;font-size:12px;line-height:1.5;">
-        Si el botón no funciona, abre:
-        <a href="${link}" style="color:#c4f29a;word-break:break-all;">${link}</a>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
+import { bookingMessage, messageHtml } from "./templates";
 
 export async function enqueueBooking(
   m: EntityManager,
   b: Booking,
-  kind: string,
+  kind: "confirmada" | "cancelada",
 ) {
   const business = await m.findOneByOrFail(Business, { id: b.businessId });
 
@@ -102,14 +23,23 @@ export async function enqueueBooking(
     m.findOneByOrFail(User, { id: business.ownerId }),
   ]);
 
-  for (const u of recipients)
+  for (const [index, u] of recipients.entries()) {
+    const message = bookingMessage(u.language, kind, index === 0 ? "client" : "owner", {
+      serviceName: b.serviceName,
+      businessName: business.name,
+      startAt: b.startAt,
+      code: b.code,
+      cancellationReason: b.cancellationReason,
+      link: config.WEB_ORIGIN + "/reservas",
+    });
     await m.save(Notification, {
       userId: u.id,
       email: u.email,
-      subject: `Reserva ${kind} · ${b.code}`,
-      body: `${b.serviceName}\n${business.name}\n${formatCR(b.startAt)}\nCódigo: ${b.code}\nEstado: ${kind}${b.cancellationReason ? "\nMotivo: " + b.cancellationReason : ""}\nConsulta los detalles en ${config.WEB_ORIGIN}/reservas`,
+      subject: message.subject,
+      body: message.body,
       nextAttemptAt: new Date(),
     });
+  }
 }
 
 @Injectable()
@@ -175,7 +105,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
               to: job.email,
               subject: job.subject,
               text: job.body,
-              html: bookingEmail(job),
+              html: messageHtml(job.subject, job.body, new URL("/reservas", config.WEB_ORIGIN).toString()),
               messageId: `<${job.id}@reservacr.local>`,
             });
             job.status = "SENT";

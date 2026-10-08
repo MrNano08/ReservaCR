@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { MapPin, Phone, Clock3, CheckCircle2, ArrowLeft } from "lucide-react";
@@ -5,6 +6,7 @@ import { useLoad } from "../hooks/useLoad";
 import { useAuth } from "../hooks/useAuth";
 import { Business } from "../types";
 import { api, send } from "../services/api";
+import { bilingualText, categoryLabel } from "../i18n/content";
 import { BusinessArt, ErrorBox, Loading, Field, Empty } from "../components/UI";
 import {
   money,
@@ -12,9 +14,11 @@ import {
   dateTime,
   today,
   weekdays,
+  weekdayName,
   minuteTime,
 } from "../utils/format";
 export default function BusinessDetail() {
+  const { t } = useTranslation("business");
   const { id } = useParams();
   const { data: b, loading, error } = useLoad<Business>(`/businesses/${id}`);
   const { user } = useAuth();
@@ -43,20 +47,20 @@ export default function BusinessDetail() {
     <>
       <Link className="back-link" to="/">
         <ArrowLeft size={16} />
-        Volver a explorar
+        {t("business:actions.back")}
       </Link>
       <div className="detail-grid">
         <section>
           <BusinessArt business={b} large />
           <div className="page-head">
-            <span className="eyebrow">{b.category.name}</span>
+            <span className="eyebrow">{categoryLabel(b.category)}</span>
             <h1>{b.name}</h1>
             <p>
               <MapPin size={16} />
               {b.address} · {b.canton}, {b.province}
             </p>
           </div>
-          <p className="description">{b.description}</p>
+          <p className="description">{bilingualText(b.description, b.descriptionEn)}</p>
           <div className="info-strip">
             <span>
               <Phone size={17} />
@@ -64,10 +68,10 @@ export default function BusinessDetail() {
             </span>
             <span>
               <Clock3 size={17} />
-              Hora de Costa Rica
+              {t("business:timeZone")}
             </span>
           </div>
-          <h2>Encuentra tu servicio</h2>
+          <h2>{t("business:services.title")}</h2>
           <div className="service-list">
             {b.services.map((s) => (
               <button
@@ -76,9 +80,9 @@ export default function BusinessDetail() {
                 onClick={() => setService(s.id)}
               >
                 <span>
-                  <strong>{s.name}</strong>
-                  <small>{s.description}</small>
-                  <span className="muted">{s.duration} minutos</span>
+                  <strong>{bilingualText(s.name, s.nameEn)}</strong>
+                  <small>{bilingualText(s.description, s.descriptionEn)}</small>
+                  <span className="muted">{t("business:duration", { count: s.duration })}</span>
                 </span>
                 <span>
                   <strong>{money(s.price)}</strong>
@@ -88,10 +92,10 @@ export default function BusinessDetail() {
             ))}
           </div>
           <div className="panel">
-            <h3>Horario de atención</h3>
-            {weekdays.map((name, i) => (
+            <h3>{t("business:hours.title")}</h3>
+            {weekdays.map((_, i) => (
               <div className="hours-summary" key={i}>
-                <span>{name}</span>
+                <span>{weekdayName(i)}</span>
                 <span>
                   {b.hours
                     .filter((h) => h.weekday === i)
@@ -99,27 +103,26 @@ export default function BusinessDetail() {
                       (h) =>
                         `${minuteTime(h.startMinute)} – ${minuteTime(h.endMinute)}`,
                     )
-                    .join(" / ") || "Cerrado"}
+                    .join(" / ") || t("business:hours.closed")}
                 </span>
               </div>
             ))}
           </div>
         </section>
         <aside className="panel booking-panel">
-          <span className="eyebrow">HAZ UN ESPACIO PARA TI</span>
-          <h2>Reserva tu cita</h2>
+          <span className="eyebrow">{t("business:booking.eyebrow")}</span>
+          <h2>{t("business:booking.title")}</h2>
           {success ? (
             <div className="success-state" role="status">
               <CheckCircle2 size={48} />
-              <h3>Tu cita está confirmada</h3>
+              <h3>{t("business:success.title")}</h3>
               <strong>{success.code}</strong>
               <p>{dateTime(success.startAt)}</p>
               <p>
-                La encontrarás en tus reservas. La notificación por correo se
-                procesará por separado.
+                {t("business:success.description")}
               </p>
               <Link className="button full" to="/reservas">
-                Ver mis reservas
+                {t("business:success.link")}
               </Link>
             </div>
           ) : (
@@ -127,14 +130,14 @@ export default function BusinessDetail() {
               <div className="booking-step">
                 <span>1</span>
                 <strong>
-                  {selected ? selected.name : "Selecciona un servicio"}
+                  {selected ? bilingualText(selected.name, selected.nameEn) : t("business:booking.service")}
                 </strong>
               </div>
               <div className="booking-step">
                 <span>2</span>
-                <strong>Encuentra tu momento</strong>
+                <strong>{t("business:booking.moment")}</strong>
               </div>
-              <Field label="Fecha de la cita">
+              <Field label={t("business:booking.date")}>
                 <input
                   type="date"
                   min={today()}
@@ -145,7 +148,7 @@ export default function BusinessDetail() {
               </Field>
               {!serviceId ? (
                 <p className="hint">
-                  Elige un servicio para consultar horarios disponibles.
+                  {t("business:booking.choose")}
                 </p>
               ) : availability.loading ? (
                 <Loading />
@@ -164,19 +167,19 @@ export default function BusinessDetail() {
                       >
                         {time(s.startAt)}
                         <small>
-                          {s.remaining} {s.remaining === 1 ? "cupo" : "cupos"}
+                          {t("business:capacity", { count: s.remaining })}
                         </small>
                       </button>
                     ))}
                   </div>
                   {!availability.error && !availability.data?.slots.length && (
-                    <Empty title="Sin horarios disponibles">
-                      <p>Prueba con otra fecha.</p>
+                    <Empty title={t("business:empty.title")}>
+                      <p>{t("business:empty.description")}</p>
                     </Empty>
                   )}
                 </>
               )}
-              <Field label="Nota para el negocio (opcional)">
+              <Field label={t("business:booking.notes")}>
                 <textarea
                   maxLength={500}
                   value={notes}
@@ -184,16 +187,15 @@ export default function BusinessDetail() {
                     setNotes(e.target.value);
                     key.current = crypto.randomUUID();
                   }}
-                  placeholder="¿Algo que debamos saber?"
+                  placeholder={t("business:booking.notesPlaceholder")}
                 />
               </Field>
               <div className="booking-total">
-                <span>Precio del servicio</span>
+                <span>{t("business:booking.price")}</span>
                 <strong>{selected ? money(selected.price) : "—"}</strong>
               </div>
               <p className="hint">
-                Cancelación hasta {b.cancellationMinutes} minutos antes de la
-                cita. El pago, si corresponde, se coordina con el negocio.
+                {t("business:booking.policy", { minutes: b.cancellationMinutes })}
               </p>
               <ErrorBox message={failure} />
               {!user ? (
@@ -201,11 +203,11 @@ export default function BusinessDetail() {
                   className="button full"
                   to={`/ingresar?next=/negocios/${b.id}`}
                 >
-                  Inicia sesión para reservar
+                  {t("business:booking.login")}
                 </Link>
               ) : user.role !== "CLIENT" ? (
                 <p className="hint">
-                  Las reservas se realizan desde una cuenta de cliente.
+                  {t("business:booking.client")}
                 </p>
               ) : (
                 <button
@@ -233,7 +235,7 @@ export default function BusinessDetail() {
                     }
                   }}
                 >
-                  {busy ? "Confirmando…" : "Confirmar reserva"}
+                  {busy ? t("business:booking.busy") : t("business:booking.confirm")}
                   <CheckCircle2 size={18} />
                 </button>
               )}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   BrowserRouter,
   Routes,
@@ -21,6 +22,7 @@ import Owner from "./pages/Owner";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 function Protected({ roles }: { roles?: Role[] }) {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <Loading />;
@@ -33,8 +35,8 @@ function Protected({ roles }: { roles?: Role[] }) {
     );
   if (roles && !roles.includes(user.role))
     return (
-      <Empty title="No tienes acceso a esta sección">
-        <Link to="/">Volver al inicio</Link>
+      <Empty title={t("common:access.denied")}>
+        <Link to="/">{t("common:actions.home")}</Link>
       </Empty>
     );
   return <Outlet />;
@@ -47,6 +49,7 @@ function Scroll() {
   return null;
 }
 export default function App() {
+  const { t } = useTranslation();
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -74,9 +77,9 @@ export default function App() {
             <Route
               path="*"
               element={
-                <Empty title="Esta página no existe">
+                <Empty title={t("common:access.notFound")}>
                   <Link className="button" to="/">
-                    Volver al inicio
+                    {t("common:actions.home")}
                   </Link>
                 </Empty>
               }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, Search, MapPin, Clock3 } from "lucide-react";
@@ -5,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useLoad } from "../hooks/useLoad";
 import { Booking } from "../types";
 import { api, send } from "../services/api";
+import { bilingualText } from "../i18n/content";
 import {
   PageHead,
   Badge,
@@ -13,8 +15,9 @@ import {
   Empty,
   Field,
 } from "../components/UI";
-import { dateTime, money } from "../utils/format";
+import { dateTime, money, time, number } from "../utils/format";
 export default function Bookings() {
+  const { t } = useTranslation("bookings");
   const { user } = useAuth();
   const { data, loading, error, reload } = useLoad<Booking[]>("/bookings");
   const [filter, setFilter] = useState("upcoming"),
@@ -32,7 +35,7 @@ export default function Bookings() {
           new Date(b.endAt) > new Date()) ||
         (filter === "history" &&
           (b.status !== "CONFIRMED" || new Date(b.endAt) <= new Date()))) &&
-      `${b.code} ${b.serviceName} ${b.business.name} ${b.client?.name || ""}`
+      `${b.code} ${bilingualText(b.serviceName, b.serviceNameEn)} ${b.business.name} ${b.client?.name || ""}`
         .toLowerCase()
         .includes(q.toLowerCase()),
   );
@@ -53,40 +56,39 @@ export default function Bookings() {
   return (
     <>
       <PageHead
-        eyebrow={owner ? "TU AGENDA" : "TU TIEMPO, ORGANIZADO"}
-        title={owner ? "Reservas del negocio" : "Mis reservas"}
+        eyebrow={owner ? t("bookings:head.ownerEyebrow") : t("bookings:head.clientEyebrow")}
+        title={owner ? t("bookings:head.ownerTitle") : t("bookings:head.clientTitle")}
       >
-        Consulta tus próximas citas y su historial. Todos los horarios
-        corresponden a Costa Rica.
+        {t("bookings:head.description")}
       </PageHead>
       <div className="stats-grid">
         <div className="stat">
-          <span>Próximas citas</span>
+          <span>{t("bookings:stats.upcoming")}</span>
           <strong>
-            {data?.filter(
+            {number(data?.filter(
               (b) => b.status === "CONFIRMED" && new Date(b.endAt) > new Date(),
-            ).length || 0}
+            ).length || 0)}
           </strong>
         </div>
         <div className="stat">
-          <span>Completadas</span>
+          <span>{t("bookings:stats.completed")}</span>
           <strong>
-            {data?.filter((b) => b.status === "COMPLETED").length || 0}
+            {number(data?.filter((b) => b.status === "COMPLETED").length || 0)}
           </strong>
         </div>
         <div className="stat">
-          <span>Canceladas</span>
+          <span>{t("bookings:stats.cancelled")}</span>
           <strong>
-            {data?.filter((b) => b.status === "CANCELLED").length || 0}
+            {number(data?.filter((b) => b.status === "CANCELLED").length || 0)}
           </strong>
         </div>
       </div>
       <div className="toolbar">
         <div className="tabs">
           {[
-            ["upcoming", "Próximas"],
-            ["history", "Historial"],
-            ["all", "Todas"],
+            ["upcoming", t("bookings:filters.upcoming")],
+            ["history", t("bookings:filters.history")],
+            ["all", t("bookings:filters.all")],
           ].map(([v, l]) => (
             <button
               className={filter === v ? "active" : ""}
@@ -100,7 +102,7 @@ export default function Bookings() {
         <label className="inline-search">
           <Search size={18} />
           <input
-            placeholder="Buscar reserva…"
+            placeholder={t("bookings:search")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -118,7 +120,7 @@ export default function Bookings() {
               </div>
               <div className="reservation-main">
                 <div className="row">
-                  <h3>{b.serviceName}</h3>
+                  <h3>{bilingualText(b.serviceName, b.serviceNameEn)}</h3>
                   <Badge value={b.status} />
                 </div>
                 <p>
@@ -128,23 +130,18 @@ export default function Bookings() {
                 <p>
                   <Clock3 size={14} />
                   {dateTime(b.startAt)} –{" "}
-                  {new Intl.DateTimeFormat("es-CR", {
-                    timeZone: "America/Costa_Rica",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(b.endAt))}
+                  {time(b.endAt)}
                 </p>
                 <small>
                   {b.code} · {money(b.price)}
                 </small>
                 {b.client && (
                   <p>
-                    Cliente: {b.client.name} · {b.client.email} ·{" "}
-                    {b.client.phone}
+                    {t("bookings:detail.client", { name: b.client.name, email: b.client.email, phone: b.client.phone })}
                   </p>
                 )}
-                {b.notes && <p>Nota: {b.notes}</p>}
-                {b.cancellationReason && <p>Motivo: {b.cancellationReason}</p>}
+                {b.notes && <p>{t("bookings:detail.notes", { notes: b.notes })}</p>}
+                {b.cancellationReason && <p>{t("bookings:detail.reason", { reason: b.cancellationReason })}</p>}
               </div>
               <div className="reservation-actions">
                 {b.status === "CONFIRMED" &&
@@ -162,7 +159,7 @@ export default function Bookings() {
                         setReason("");
                       }}
                     >
-                      Cancelar cita
+                      {t("bookings:actions.cancel")}
                     </button>
                   ) : owner && new Date(b.endAt) <= new Date() ? (
                     <>
@@ -170,26 +167,26 @@ export default function Bookings() {
                         disabled={!!busy}
                         onClick={() => change(b, "COMPLETED")}
                       >
-                        Marcar completada
+                        {t("bookings:actions.complete")}
                       </button>
                       <button
                         disabled={!!busy}
                         onClick={() => change(b, "NO_SHOW")}
                       >
-                        No asistió
+                        {t("bookings:actions.noShow")}
                       </button>
                     </>
                   ) : null)}
-                <Link to={`/negocios/${b.business.id}`}>Ver negocio ↗</Link>
+                <Link to={`/negocios/${b.business.id}`}>{t("bookings:actions.business")}</Link>
               </div>
             </article>
           ))}
         </div>
       ) : (
-        <Empty title="No hay reservas en esta vista">
+        <Empty title={t("bookings:empty.title")}>
           {!owner && (
             <Link className="button" to="/">
-              Explorar negocios
+              {t("bookings:empty.explore")}
             </Link>
           )}
         </Empty>
@@ -202,11 +199,11 @@ export default function Bookings() {
             aria-modal="true"
             aria-labelledby="cancel-title"
           >
-            <h2 id="cancel-title">¿Cancelar esta cita?</h2>
+            <h2 id="cancel-title">{t("bookings:cancel.title")}</h2>
             <p>
-              {cancel.serviceName} · {dateTime(cancel.startAt)}
+              {bilingualText(cancel.serviceName, cancel.serviceNameEn)} · {dateTime(cancel.startAt)}
             </p>
-            <Field label="Motivo (opcional)">
+            <Field label={t("bookings:cancel.reason")}>
               <textarea
                 value={reason}
                 maxLength={300}
@@ -216,14 +213,14 @@ export default function Bookings() {
             <ErrorBox message={failure} />
             <div className="row">
               <button disabled={!!busy} onClick={() => setCancel(null)}>
-                Mantener cita
+                {t("bookings:cancel.keep")}
               </button>
               <button
                 className="button danger"
                 disabled={!!busy}
                 onClick={() => change(cancel, "CANCELLED")}
               >
-                {busy ? "Cancelando…" : "Sí, cancelar"}
+                {busy ? t("bookings:cancel.busy") : t("bookings:cancel.confirm")}
               </button>
             </div>
           </section>

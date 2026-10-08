@@ -1,0 +1,42 @@
+{
+  "head": {
+    "ownerEyebrow": "YOUR SCHEDULE",
+    "clientEyebrow": "YOUR TIME, ORGANIZED",
+    "ownerTitle": "Business bookings",
+    "clientTitle": "My bookings",
+    "description": "View your upcoming appointments and booking history. All times are in Costa Rica time."
+  },
+  "stats": {
+    "upcoming": "Upcoming appointments",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "filters": {
+    "upcoming": "Upcoming",
+    "history": "History",
+    "all": "All"
+  },
+  "search": "Search bookings…",
+  "actions": {
+    "cancel": "Cancel appointment",
+    "complete": "Mark as completed",
+    "noShow": "No-show",
+    "business": "View business ↗"
+  },
+  "empty": {
+    "title": "No bookings in this view",
+    "explore": "Explore businesses"
+  },
+  "cancel": {
+    "title": "Cancel this appointment?",
+    "reason": "Reason (optional)",
+    "keep": "Keep appointment",
+    "busy": "Cancelling…",
+    "confirm": "Yes, cancel"
+  },
+  "detail": {
+    "client": "Client: {{name}} · {{email}} · {{phone}}",
+    "notes": "Note: {{notes}}",
+    "reason": "Reason: {{reason}}"
+  }
+}

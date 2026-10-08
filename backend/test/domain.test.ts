@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import "./i18n.test";
 import {
   dateInCR,
   localInstant,

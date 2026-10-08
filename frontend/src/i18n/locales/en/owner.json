@@ -1,0 +1,103 @@
+{
+  "head": {
+    "eyebrow": "BUSINESS SPACE",
+    "title": "Give your business a place",
+    "description": "Set up your profile, services and the times your clients can book."
+  },
+  "status": {
+    "visible": "Visible in the catalog",
+    "hidden": "Unpublished"
+  },
+  "actions": {
+    "review": "Request another review",
+    "hide": "Hide business",
+    "publish": "Publish business",
+    "publicProfile": "View public profile",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "close": "Close",
+    "delete": "Delete"
+  },
+  "tabs": {
+    "profile": "Profile",
+    "services": "Services",
+    "hours": "Hours and capacity",
+    "blocks": "Blocked times"
+  },
+  "profile": {
+    "title": "First impressions matter",
+    "name": "Business name",
+    "category": "Category",
+    "chooseCategory": "Select a category",
+    "province": "Province",
+    "canton": "Canton",
+    "address": "Full address",
+    "phone": "Contact phone",
+    "description": "Description in Spanish",
+    "save": "Save profile",
+    "reviewHint": "Your business will be submitted for review. After approval, you can publish it with services and opening hours.",
+    "image": "Business image (JPG, PNG or WebP, maximum 5 MB)",
+    "imageAlt": "Current business image",
+    "descriptionEn": "Description in English (optional)"
+  },
+  "errors": {
+    "imageSize": "The image exceeds 5 MB."
+  },
+  "services": {
+    "title": "Your services",
+    "add": "Add service",
+    "inactive": "(Inactive)",
+    "empty": "Add your first service to publish your business.",
+    "edit": "Edit service",
+    "new": "New service",
+    "name": "Service name in Spanish",
+    "duration": "Duration (minutes, multiples of 30)",
+    "price": "Price in colones (blank: ask for price)",
+    "status": "Status",
+    "active": "Active",
+    "inactiveOption": "Inactive",
+    "description": "Description in Spanish",
+    "save": "Save service",
+    "nameEn": "Service name in English (optional)",
+    "descriptionEn": "Description in English (optional)"
+  },
+  "hours": {
+    "title": "Capacity and availability",
+    "capacityHint": "Capacity is shared by all services. A long service uses one spot in each 30-minute interval.",
+    "capacity": "Simultaneous capacity",
+    "cancellation": "Minimum cancellation notice (minutes)",
+    "savePolicy": "Save capacity and cancellation policy",
+    "weekly": "Weekly hours",
+    "hint": "You can add two time ranges on the same day for a break. Overlapping ranges are not allowed.",
+    "day": "Day",
+    "open": "Opening",
+    "to": "to",
+    "close": "Closing",
+    "remove": "Remove time range",
+    "add": "Add time range",
+    "save": "Save opening hours"
+  },
+  "blocks": {
+    "title": "Breaks and exceptional closures",
+    "hint": "Blocked times cannot overlap existing bookings. Times are in Costa Rica time.",
+    "from": "From",
+    "to": "To",
+    "reason": "Reason",
+    "placeholder": "Holiday, maintenance, break…",
+    "add": "Add blocked time"
+  },
+  "notice": {
+    "review": "Request submitted for review.",
+    "hidden": "Business hidden.",
+    "published": "Business published.",
+    "profile": "Profile saved.",
+    "image": "Image updated.",
+    "service": "Service saved.",
+    "policy": "Capacity and policy saved.",
+    "hours": "Opening hours updated.",
+    "blockAdded": "Blocked time added.",
+    "blockDeleted": "Blocked time deleted."
+  },
+  "reviewNote": "Review: {{note}}",
+  "duration": "{{minutes}} min"
+}

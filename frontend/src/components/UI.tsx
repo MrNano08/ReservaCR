@@ -1,4 +1,6 @@
 import { ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "../i18n/errors";
 import {
   AlertCircle,
   CalendarDays,
@@ -12,20 +14,22 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Business } from "../types";
-import { labels } from "../utils/format";
+import { bilingualText, categoryLabel } from "../i18n/content";
 export function ErrorBox({ message }: { message: string }) {
+  useTranslation();
   return message ? (
     <div className="alert error" role="alert">
       <AlertCircle size={18} />
-      {message}
+      {errorMessage(message)}
     </div>
   ) : null;
 }
 export function Loading() {
+  const { t } = useTranslation();
   return (
     <div className="empty" role="status">
       <LoaderCircle className="spin" />
-      Cargando…
+      {t("common:loading")}
     </div>
   );
 }
@@ -45,9 +49,10 @@ export function Empty({
   );
 }
 export function Badge({ value }: { value: string }) {
+  const { t, i18n } = useTranslation();
   return (
     <span className={`badge ${value.toLowerCase()}`}>
-      {labels[value] || value}
+      {i18n.exists(`common:status.${value}`) ? t(`common:status.${value}`) : value}
     </span>
   );
 }
@@ -90,18 +95,20 @@ export function BusinessArt({
   large?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  const cat = business.category?.name || "";
+  useTranslation();
+  const cat = categoryLabel(business.category);
+  const code = business.category?.code;
   const Icon =
-    cat === "Barbería"
+    code === "barber"
       ? Scissors
-      : cat === "Salud"
+      : code === "health"
         ? HeartPulse
-        : cat === "Bienestar"
+        : code === "wellness"
           ? Leaf
           : Sparkles;
   return (
     <div
-      className={`business-art ${large ? "large" : ""} tone-${cat === "Barbería" ? 2 : cat === "Salud" ? 3 : cat === "Bienestar" ? 4 : 1}`}
+      className={`business-art ${large ? "large" : ""} tone-${code === "barber" ? 2 : code === "health" ? 3 : code === "wellness" ? 4 : 1}`}
     >
       {business.imageUrl && !failed ? (
         <img
@@ -123,6 +130,7 @@ export function BusinessArt({
   );
 }
 export function BusinessCard({ business: b }: { business: Business }) {
+  const { t } = useTranslation();
   return (
     <Link className="business-card" to={`/negocios/${b.id}`}>
       <BusinessArt business={b} />
@@ -135,10 +143,10 @@ export function BusinessCard({ business: b }: { business: Business }) {
           <MapPin size={14} />
           {b.canton}, {b.province}
         </p>
-        <p className="clamp">{b.description}</p>
+        <p className="clamp">{bilingualText(b.description, b.descriptionEn)}</p>
         <div className="card-bottom">
           <span className="dot" />
-          Reservas en línea<span>Ver servicios →</span>
+          {t("common:business.online")}<span>{t("common:business.services")}</span>
         </div>
       </div>
     </Link>

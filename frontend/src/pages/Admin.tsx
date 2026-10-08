@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useLoad } from "../hooks/useLoad";
 import { Business, Category } from "../types";
@@ -10,8 +11,10 @@ import {
   Field,
   Empty,
 } from "../components/UI";
-import { dateTime, money, weekdays, minuteTime } from "../utils/format";
+import { dateTime, money, weekdayName, minuteTime } from "../utils/format";
+import { bilingualText, categoryLabel, categoryCodes } from "../i18n/content";
 export default function Admin() {
+  const { t } = useTranslation("admin");
   const [tab, setTab] = useState("businesses"),
     [filter, setFilter] = useState("ALL"),
     [error, setError] = useState(""),
@@ -59,16 +62,15 @@ export default function Admin() {
   }
   return (
     <>
-      <PageHead eyebrow="ADMINISTRACIÓN" title="Un catálogo en buenas manos">
-        Revisa solicitudes, administra categorías y consulta los movimientos de
-        la plataforma.
+      <PageHead eyebrow={t("admin:head.eyebrow")} title={t("admin:head.title")}>
+        {t("admin:head.description")}
       </PageHead>
       <div className="tabs owner-tabs">
         {[
-          ["businesses", "Negocios"],
-          ["categories", "Categorías"],
-          ["mail", "Correos"],
-          ["audit", "Actividad"],
+          ["businesses", t("admin:tabs.businesses")],
+          ["categories", t("admin:tabs.categories")],
+          ["mail", t("admin:tabs.mail")],
+          ["audit", t("admin:tabs.audit")],
         ].map(([v, l]) => (
           <button
             key={v}
@@ -94,17 +96,17 @@ export default function Admin() {
       {tab === "businesses" && (
         <>
           <div className="toolbar">
-            <h2>Solicitudes y negocios</h2>
+            <h2>{t("admin:businesses.title")}</h2>
             <select
-              aria-label="Filtrar por estado"
+              aria-label={t("admin:filters.label")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
-              <option value="ALL">Todos los estados</option>
-              <option value="PENDING">Pendientes</option>
-              <option value="APPROVED">Aprobados</option>
-              <option value="REJECTED">Rechazados</option>
-              <option value="SUSPENDED">Suspendidos</option>
+              <option value="ALL">{t("admin:filters.all")}</option>
+              <option value="PENDING">{t("admin:filters.pending")}</option>
+              <option value="APPROVED">{t("admin:filters.approved")}</option>
+              <option value="REJECTED">{t("admin:filters.rejected")}</option>
+              <option value="SUSPENDED">{t("admin:filters.suspended")}</option>
             </select>
           </div>
           {businesses.loading ? (
@@ -114,11 +116,11 @@ export default function Admin() {
               <table>
                 <thead>
                   <tr>
-                    <th>Negocio</th>
-                    <th>Ubicación</th>
-                    <th>Estado</th>
-                    <th>Publicación</th>
-                    <th>Acción</th>
+                    <th>{t("admin:table.business")}</th>
+                    <th>{t("admin:table.location")}</th>
+                    <th>{t("admin:table.status")}</th>
+                    <th>{t("admin:table.publication")}</th>
+                    <th>{t("admin:table.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -128,13 +130,13 @@ export default function Admin() {
                       <tr key={b.id}>
                         <td>
                           <strong>{b.name}</strong>
-                          <small>{b.category?.name}</small>
+                          <small>{categoryLabel(b.category)}</small>
                         </td>
                         <td>{b.canton}</td>
                         <td>
                           <Badge value={b.status} />
                         </td>
-                        <td>{b.published ? "Publicado" : "Oculto"}</td>
+                        <td>{b.published ? t("admin:publication.visible") : t("admin:publication.hidden")}</td>
                         <td>
                           <button
                             disabled={busy}
@@ -147,7 +149,7 @@ export default function Admin() {
                               })
                             }
                           >
-                            Revisar
+                            {t("admin:actions.review")}
                           </button>
                         </td>
                       </tr>
@@ -156,35 +158,40 @@ export default function Admin() {
               </table>
             </div>
           ) : (
-            <Empty title="Todavía no hay negocios registrados" />
+            <Empty title={t("admin:businesses.empty")} />
           )}
         </>
       )}
       {tab === "categories" && (
         <section className="panel">
-          <h2>Categorías del catálogo</h2>
+          <h2>{t("admin:categories.title")}</h2>
           <form
             className="row"
             onSubmit={(e) => {
               e.preventDefault();
               const form = e.currentTarget;
-              const name = new FormData(form).get("name");
+              const data = new FormData(form);
+              const name = data.get("name"), code = data.get("code") || null;
               void action(async () => {
-                await api("/admin/categories", send("POST", { name }));
+                await api("/admin/categories", send("POST", { name, code }));
                 form.reset();
               });
             }}
           >
             <input
-              aria-label="Nueva categoría"
+              aria-label={t("admin:categories.new")}
               name="name"
               required
               minLength={2}
               maxLength={80}
-              placeholder="Nombre de la nueva categoría"
+              placeholder={t("admin:categories.placeholder")}
             />
+            <select name="code" aria-label={t("admin:categories.translation")}>
+              <option value="">{t("admin:categories.original")}</option>
+              {categoryCodes.map((code) => <option key={code} value={code}>{t(`common:categories.${code}`)}</option>)}
+            </select>
             <button className="button" disabled={busy}>
-              Agregar
+              {t("admin:actions.add")}
             </button>
           </form>
           {categories.loading ? (
@@ -202,6 +209,7 @@ export default function Admin() {
                       `/admin/categories/${c.id}`,
                       send("PATCH", {
                         name: d.get("name"),
+                        code: d.get("code") || null,
                         active: d.get("active") === "on",
                       }),
                     ),
@@ -210,36 +218,39 @@ export default function Admin() {
               >
                 <input
                   name="name"
-                  aria-label="Nombre de categoría"
+                  aria-label={t("admin:categories.name")}
                   defaultValue={c.name}
                   required
                   minLength={2}
                   maxLength={80}
                 />
+                <select name="code" defaultValue={c.code ?? ""}
+                  aria-label={t("admin:categories.translation")}>
+                  <option value="">{t("admin:categories.original")}</option>
+                  {categoryCodes.map((code) => <option key={code} value={code}>{t(`common:categories.${code}`)}</option>)}
+                </select>
                 <label className="row">
                   <input
                     type="checkbox"
                     name="active"
                     defaultChecked={c.active}
                   />
-                  Activa
+                  {t("admin:categories.active")}
                 </label>
-                <button disabled={busy}>Guardar</button>
+                <button disabled={busy}>{t("admin:actions.save")}</button>
               </form>
             ))
           )}
           <p className="hint">
-            Desactivar una categoría impide usarla en nuevos registros. Los
-            negocios existentes conservan su categoría e historial.
+            {t("admin:categories.hint")}
           </p>
         </section>
       )}
       {tab === "mail" && (
         <section className="panel">
-          <h2>Estado de notificaciones</h2>
+          <h2>{t("admin:mail.title")}</h2>
           <p className="hint">
-            El fallo de correo no elimina la reserva. Los envíos pendientes se
-            reintentan automáticamente cuando SMTP está configurado.
+            {t("admin:mail.hint")}
           </p>
           {jobs.loading ? (
             <Loading />
@@ -249,7 +260,7 @@ export default function Admin() {
                 <div>
                   <strong>{j.subject}</strong>
                   <p>
-                    {dateTime(j.createdAt)} · {j.attempts} intentos
+                    {dateTime(j.createdAt)} · {t("admin:mail.attempts", { count: j.attempts })}
                   </p>
                 </div>
                 <Badge value={j.status} />
@@ -262,7 +273,7 @@ export default function Admin() {
                       )
                     }
                   >
-                    Reintentar
+                    {t("admin:actions.retry")}
                   </button>
                 )}
               </div>
@@ -272,17 +283,17 @@ export default function Admin() {
       )}
       {tab === "audit" && (
         <section className="panel table-scroll">
-          <h2>Últimos movimientos</h2>
+          <h2>{t("admin:audit.title")}</h2>
           {audit.loading ? (
             <Loading />
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Acción</th>
-                  <th>Recurso</th>
-                  <th>Detalle</th>
+                  <th>{t("admin:table.date")}</th>
+                  <th>{t("admin:table.action")}</th>
+                  <th>{t("admin:table.resource")}</th>
+                  <th>{t("admin:table.detail")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,15 +303,15 @@ export default function Admin() {
                     <td>
                       {(
                         {
-                          BUSINESS_APPROVED: "Negocio aprobado",
-                          BUSINESS_REJECTED: "Negocio rechazado",
-                          BUSINESS_SUSPENDED: "Negocio suspendido",
-                          CATEGORY_CREATE: "Categoría creada",
-                          CATEGORY_UPDATE: "Categoría actualizada",
-                          BOOKING_CONFIRMED: "Reserva confirmada",
-                          BOOKING_CANCELLED: "Reserva cancelada",
-                          BOOKING_COMPLETED: "Reserva completada",
-                          BOOKING_NO_SHOW: "No asistió",
+                          BUSINESS_APPROVED: t("admin:audit.actions.BUSINESS_APPROVED"),
+                          BUSINESS_REJECTED: t("admin:audit.actions.BUSINESS_REJECTED"),
+                          BUSINESS_SUSPENDED: t("admin:audit.actions.BUSINESS_SUSPENDED"),
+                          CATEGORY_CREATE: t("admin:audit.actions.CATEGORY_CREATE"),
+                          CATEGORY_UPDATE: t("admin:audit.actions.CATEGORY_UPDATE"),
+                          BOOKING_CONFIRMED: t("admin:audit.actions.BOOKING_CONFIRMED"),
+                          BOOKING_CANCELLED: t("admin:audit.actions.BOOKING_CANCELLED"),
+                          BOOKING_COMPLETED: t("admin:audit.actions.BOOKING_COMPLETED"),
+                          BOOKING_NO_SHOW: t("admin:audit.actions.BOOKING_NO_SHOW"),
                         } as Record<string, string>
                       )[a.action] || a.action}
                     </td>
@@ -325,30 +336,31 @@ export default function Admin() {
           >
             <div className="row between">
               <h2 id="review-title">{selected.name}</h2>
-              <button onClick={() => setSelected(null)}>Cerrar</button>
+              <button onClick={() => setSelected(null)}>{t("admin:actions.close")}</button>
             </div>
             <Badge value={selected.status} />
-            <p>{selected.description}</p>
+            <p>{bilingualText(selected.description, selected.descriptionEn)}</p>
             <p>
               {selected.address} · {selected.canton}, {selected.province}
             </p>
             <p>
-              Teléfono: {selected.phone} · {selected.capacity} cupos
+              {t("admin:review.contact", { phone: selected.phone, capacity: selected.capacity })}
             </p>
-            <h3>Servicios</h3>
+            <h3>{t("admin:review.services")}</h3>
             {selected.services.map((s) => (
               <p key={s.id}>
-                {s.name} · {s.duration} min · {money(s.price)}
+                {bilingualText(s.name, s.nameEn)} · {t("admin:review.duration", { minutes: s.duration })} · {money(s.price)}
+                <small>{bilingualText(s.description, s.descriptionEn)}</small>
               </p>
             ))}
-            <h3>Horario</h3>
+            <h3>{t("admin:review.hours")}</h3>
             {selected.hours.map((h, i) => (
               <p key={i}>
-                {weekdays[h.weekday]}: {minuteTime(h.startMinute)} –{" "}
+                {weekdayName(h.weekday)}: {minuteTime(h.startMinute)} –{" "}
                 {minuteTime(h.endMinute)}
               </p>
             ))}
-            <Field label="Observaciones (obligatorias para rechazar o suspender)">
+            <Field label={t("admin:review.notes")}>
               <textarea
                 maxLength={500}
                 value={note}
@@ -358,9 +370,9 @@ export default function Admin() {
             <ErrorBox message={error} />
             <div className="row wrap">
               {[
-                ["APPROVED", "Aprobar"],
-                ["REJECTED", "Rechazar"],
-                ["SUSPENDED", "Suspender"],
+                ["APPROVED", t("admin:actions.approve")],
+                ["REJECTED", t("admin:actions.reject")],
+                ["SUSPENDED", t("admin:actions.suspend")],
               ].map(([status, label]) => (
                 <button
                   key={status}

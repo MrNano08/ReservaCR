@@ -1,0 +1,47 @@
+{
+  "hero": {
+    "eyebrow": "TU PRÓXIMO ESPACIO, AQUÍ",
+    "first": "Menos vueltas.",
+    "more": "Más",
+    "time": "tiempo para ti.",
+    "description": "Descubre negocios cerca de ti y encuentra el momento perfecto para tu próxima cita."
+  },
+  "search": {
+    "label": "Buscar negocios",
+    "placeholder": "¿Qué te gustaría reservar?",
+    "province": "Provincia",
+    "all": "Toda Costa Rica",
+    "submit": "Buscar"
+  },
+  "perks": {
+    "minutes": "Reserva en minutos",
+    "approved": "Negocios aprobados",
+    "availability": "Disponibilidad al instante"
+  },
+  "art": {
+    "moment": "Un momento para ti",
+    "appointment": "Tu próxima cita",
+    "day": "Tu día, a tu ritmo.",
+    "steps": "ENCUENTRA · ELIGE · RESERVA"
+  },
+  "list": {
+    "eyebrow": "DESCUBRE LO LOCAL",
+    "title": "Un buen lugar para empezar",
+    "explore": "Explora a tu manera",
+    "all": "Todos los negocios"
+  },
+  "results_one": "{{count}} negocio encontrado",
+  "results_other": "{{count}} negocios encontrados",
+  "resultsSearch_one": "{{count}} negocio encontrado para “{{search}}”",
+  "resultsSearch_other": "{{count}} negocios encontrados para “{{search}}”",
+  "empty": {
+    "title": "No encontramos negocios con esos filtros",
+    "description": "Prueba con otra categoría, ubicación o nombre.",
+    "clear": "Limpiar filtros"
+  },
+  "cta": {
+    "eyebrow": "PARA QUIENES HACEN LO LOCAL",
+    "title": "Tu negocio. Más cerca de sus clientes.",
+    "description": "Organiza tus servicios, horarios y reservas en un solo lugar."
+  }
+}

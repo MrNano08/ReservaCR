@@ -1,23 +1,32 @@
-export const money = (value: number | null) =>
+import i18n, { locale } from "../i18n/config";
+export const money = (value: number | null, currency: "CRC" | "USD" = "CRC") =>
   value === null
-    ? "Consultar precio"
-    : new Intl.NumberFormat("es-CR", {
+    ? i18n.t("common:price.ask")
+    : new Intl.NumberFormat(locale(), {
         style: "currency",
-        currency: "CRC",
-        maximumFractionDigits: 0,
+        currency,
+        maximumFractionDigits: currency === "CRC" ? 0 : 2,
       }).format(value);
 export const dateTime = (value: string) =>
-  new Intl.DateTimeFormat("es-CR", {
+  new Intl.DateTimeFormat(locale(), {
     timeZone: "America/Costa_Rica",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 export const time = (value: string) =>
-  new Intl.DateTimeFormat("es-CR", {
+  new Intl.DateTimeFormat(locale(), {
     timeZone: "America/Costa_Rica",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+export const number = (value: number, options?: Intl.NumberFormatOptions) =>
+  new Intl.NumberFormat(locale(), options).format(value);
+// Sunday-first numeric IDs remain unchanged; only their display labels vary.
+export const weekdayName = (weekday: number) =>
+  new Intl.DateTimeFormat(locale(), {
+    timeZone: "America/Costa_Rica",
+    weekday: "long",
+  }).format(new Date(Date.UTC(2023, 0, 1 + weekday, 12)));
 export const today = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Costa_Rica",

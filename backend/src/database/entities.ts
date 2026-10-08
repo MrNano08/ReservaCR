@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
+import { Language } from "../common/language";
 export type Role = "CLIENT" | "BUSINESS" | "ADMIN";
 @Entity("users")
 export class User {
@@ -16,6 +17,7 @@ export class User {
   @Column({ select: false, length: 100 }) passwordHash!: string;
   @Column({ type: "varchar", length: 20, default: "CLIENT" }) role!: Role;
   @Column({ length: 25, default: "" }) phone!: string;
+  @Column({ type: "varchar", length: 2, default: "es" }) language!: Language;
   @Column({ default: true }) active!: boolean;
   @CreateDateColumn() createdAt!: Date;
 }
@@ -40,6 +42,7 @@ export class PasswordReset {
 export class Category {
   @PrimaryGeneratedColumn("uuid") id!: string;
   @Column({ length: 80, unique: true }) name!: string;
+  @Column({ type: "varchar", length: 32, nullable: true }) code!: string | null;
   @Column({ default: true }) active!: boolean;
 }
 @Entity("businesses")
@@ -51,6 +54,7 @@ export class Business {
   @ManyToOne(() => Category) @JoinColumn() category!: Category;
   @Column({ length: 120 }) name!: string;
   @Column({ type: "text" }) description!: string;
+  @Column({ type: "text", nullable: true }) descriptionEn!: string | null;
   @Column({ length: 80 }) province!: string;
   @Column({ length: 80 }) canton!: string;
   @Column({ length: 300 }) address!: string;
@@ -70,7 +74,9 @@ export class Service {
   @Index() @Column() businessId!: string;
   @ManyToOne(() => Business) @JoinColumn() business!: Business;
   @Column({ length: 100 }) name!: string;
+  @Column({ type: "varchar", length: 100, nullable: true }) nameEn!: string | null;
   @Column({ length: 500, default: "" }) description!: string;
+  @Column({ type: "varchar", length: 500, nullable: true }) descriptionEn!: string | null;
   @Column({ type: "int" }) duration!: number;
   @Column({ type: "int", nullable: true }) price!: number | null;
   @Column({ default: true }) active!: boolean;
@@ -108,6 +114,7 @@ export class Booking {
   @Column() serviceId!: string;
   @ManyToOne(() => Service) @JoinColumn() service!: Service;
   @Column({ length: 100 }) serviceName!: string;
+  @Column({ type: "varchar", length: 100, nullable: true }) serviceNameEn!: string | null;
   @Column({ type: "int", nullable: true }) price!: number | null;
   @Column() startAt!: Date;
   @Column() endAt!: Date;

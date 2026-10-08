@@ -171,6 +171,134 @@ En PowerShell define `$env:SEED_PASSWORD` antes de los comandos. Estas pruebas m
 
 ## Producción
 
+### Contenido bilingüe de publicaciones
+
+`description` (negocio) y `name`/`description` (servicio) conservan el español.
+Los campos opcionales `descriptionEn` y `nameEn` permiten al Owner escribir inglés;
+no se usa traducción automática ni ningún servicio externo. En EN se muestra el
+inglés no vacío, con fallback literal al español. Nombres de negocios/personas,
+ubicaciones, direcciones, contactos, códigos e IDs no se traducen.
+
+Las categorías conservan sus UUID/nombres y usan `code` opcional para resolver
+`common:categories.*` en i18next. Admin puede elegir una categoría controlada
+(Comida/Food, Ropa/Clothing, etc.) o conservar el nombre personalizado. Un código
+ausente/desconocido conserva el nombre; no se infiere identidad desde el texto.
+El seed de demostración asigna códigos al crear categorías nuevas. La migración
+`BilingualContent1790000000003` adopta por IDs exactos las dos categorías de la
+instalación diagnosticada; en otras instalaciones se asignan desde Admin.
+
+Reservas mantiene `serviceName` histórico y captura `serviceNameEn` para nuevas
+reservas. Para antiguas, usa la traducción actual solo si el nombre español del
+servicio aún coincide; de lo contrario conserva la copia histórica. Cambiar idioma
+actualiza la vista sin recargar ni consultar nuevamente la API. Los payloads viejos
+siguen siendo válidos; omitir inglés en una actualización no borra lo ya guardado.
+
+La migración agrega únicamente columnas nullable; no cambia UUID, tipos previos
+ni textos originales. `synchronize` permanece desactivado. Requiere respaldo,
+revisión de esquema/historial y ejecutar `npm run db:migrate` antes de arrancar el
+backend actualizado. MariaDB confirma DDL implícitamente: una ejecución parcial
+debe diagnosticarse, no forzarse. Para revertir código conservar las columnas;
+`down` bloquea su eliminación para proteger traducciones.
+
+### Widget de accesibilidad UserWay
+
+La carga global está en `frontend/src/main.tsx`: agrega a `<head>` un único script
+asíncrono `https://cdn.userway.org/widget.js`, con ID `userway-widget-script` y
+`data-account` tomado de `VITE_USERWAY_ACCOUNT_ID`. No depende de las rutas ni de
+los efectos de React StrictMode. Si existe el script por ID o URL, no lo duplica.
+
+Obtén el Account ID del código de instalación oficial de la cuenta que gestiona
+ReservaCR y su dominio. En `frontend/.env` (ignorado por Git), configura
+`VITE_USERWAY_ACCOUNT_ID=` con ese valor real; alternativamente define la variable
+en el entorno del build. No copies credenciales backend al frontend. Vite no lee
+el `.env` de la raíz con esta configuración. Reinicia Vite en desarrollo; en
+producción reconstruye y despliega `frontend/dist`, porque el valor se incorpora
+durante el build. El ID es público, no una clave secreta.
+
+Sin ID, o con un valor compuesto solo de espacios, no se inserta el script ni se
+solicita UserWay. La app conserva su comportamiento; solo en desarrollo aparece
+una advertencia. Un fallo de red del widget no bloquea el render ni lanza una
+excepción desde este cargador. No se guardan datos en cookies/localStorage ni se
+envían manualmente tokens, credenciales o datos de usuarios desde la integración.
+
+El script externo puede acceder al DOM y a recursos del navegador, y sus recursos
+pueden cambiar sin un despliegue local: revisar privacidad y configuración de la
+cuenta antes de activarlo. El widget no sustituye la accesibilidad propia del sitio.
+El widget usa el atributo oficial `data-trigger="userway-widget-trigger"` y un
+botón de accesibilidad en el header. La QA autenticada detectó que el icono
+flotante inferior tapaba controles Owner/Admin; este acceso evita esas superposiciones.
+No se fuerza idioma del widget; el selector de ReservaCR sigue gestionando
+`html.lang` y su propia preferencia.
+
+No hay CSP del documento en `frontend/index.html` ni en el ejemplo Nginx. Helmet
+se configura en el backend; no se modificó. Si el hosting agrega CSP, revisar
+`script-src`, `style-src`, `img-src`, `connect-src`, `font-src`, `media-src` y
+`frame-src` según la [guía oficial de UserWay](https://help.userway.org/en/articles/15592167-how-to-install-and-get-started-with-the-userway-accessibility-widget)
+y los recursos observados en Network. La entrada del script es
+`https://cdn.userway.org`; UserWay puede cargar recursos adicionales de sus
+dominios. No ampliar políticas ni añadir `unsafe-inline` sin revisar el despliegue.
+
+Con el ID válido: confirmar en Network `widget.js` y recursos de la cuenta sin
+errores; en Elements comprobar un solo `#userway-widget-script`, incluso al
+cambiar rutas. Abrir/cerrar el widget y revisar Login, catálogo, Reservas, Owner,
+Admin y Notificaciones en ES/EN a 375/768/1280 px, incluidos modales y botones
+críticos. Confirmar recarga/`html.lang`, preferencia de idioma y ausencia de
+superposiciones. No usar IDs de ejemplo ni atribuir a una preparación sin ID un
+widget ya validado.
+
+Validación de esta preparación: build frontend y los 9 tests de i18n PASARON.
+Chrome local comprobó 18 casos sin ID en Login/404, ES/EN con recarga y preferencia
+persistida, a 375/768/1280 px: cero scripts/peticiones UserWay, sin overflow ni
+excepciones JavaScript. El backend estaba detenido tras la limpieza QA anterior;
+sus peticiones de sesión devolvieron 500 del proxy. Login autenticado, catálogo,
+Reservas, Owner, Admin y Notificaciones no se revalidaron en esta etapa. No se
+crearon cuentas/sesiones QA ni se accedió a DB/SMTP. Las pruebas con Account ID
+válido (carga, abrir/cerrar, posición, duplicación en rutas e interacción real con
+i18n/cookies) quedan NO EJECUTADAS. Estado: LISTO CON OBSERVACIONES, pendiente de
+configuración y QA del widget real. Esta validación sin ID corresponde a la etapa
+previa; la activación local vigente se describe abajo.
+
+Activación local: `frontend/.env` contiene el Account ID oficial proporcionado por
+el propietario, `oXADhQbJ9t`. El archivo está ignorado por Git; no se modificaron
+entornos de producción. Vite fue iniciado en `localhost:5173`. Chrome local y
+Playwright validaron 27 casos públicos de catálogo, Login y 404 en ES/EN a
+375/768/1280: script único con ID/account correctos, icono visible, menú real que
+abre/cierra, navegación SPA conservando el mismo script, idioma persistido con
+recarga y sin overflow documental. Se verificó ausencia de superposición con
+controles de header/login y formularios visibles. El icono flotante puede ocupar
+una esquina de una tarjeta; no se atribuye esa intersección con el rectángulo de
+la tarjeta a un botón crítico tapado. Modales/tablas autenticados siguen pendientes.
+
+UserWay y sus recursos observados respondieron 200; sin 5xx de UserWay, errores
+de petición bloqueada o excepciones JavaScript. Las consultas `/api/auth/me`
+respondieron 401 esperado sin sesión. Build frontend y los 9 tests de i18n PASARON.
+El backend existente respondió DB conectada; no se accedió a cuentas autenticadas,
+no se crearon sesiones/datos QA ni se ejecutaron migraciones o acciones SMTP.
+QA autenticada con UserWay: NO EJECUTADA, cuentas QA previas eliminadas y sin
+credenciales disponibles. Backend sin modificaciones por comparación de hashes.
+Estado de activación: LISTO CON OBSERVACIONES por la cobertura autenticada pendiente.
+Evidencia de esa etapa pública fuera de Git: `userway-live-validation.json` y seis capturas en la carpeta
+de visualizaciones de la sesión. Copia/scripts de pruebas retirados; Chrome cerrado.
+
+QA autenticada posterior (Chrome local/Playwright): 168 casos finales y 10
+comprobaciones adicionales PASARON para CLIENT/BUSINESS/ADMIN, Reservas, Owner,
+Admin y Notificaciones, ES/EN, a 375/768/1280 px. Incluye cancelación de reserva,
+formularios Owner, modal Admin, notificaciones leídas/no leídas y acceso denegado
+por rol. El menú abrió/cerró en 30 comprobaciones; sin overflow documental,
+superposiciones con controles visibles, excepciones JavaScript, 5xx ni bloqueos
+de peticiones. Recarga y navegación SPA conservaron idioma y un solo cargador.
+El selector amplio `script[src*="userway"]` cuenta 3–4 recursos legítimos del SDK;
+el cargador `widget.js`, el botón y el iframe del widget son únicos.
+Build frontend y los 9 tests de i18n PASARON. Backend, esquema y registros
+originales permanecieron intactos. Se usó exclusivamente SMTP local de captura.
+Las tres cuentas y fixtures QA quedan inventariados por IDs exactos, pendientes
+de autorización de limpieza; no se deben borrar por prefijo o correo parcial.
+Evidencia vigente fuera de Git: `userway-auth-final-results.json`,
+`userway-auth-manifest.json` y capturas `uw-auth-fixed-*.png`. El backend/SMTP
+temporal y Chrome QA fueron detenidos; los scripts temporales fueron retirados.
+Estado: LISTO CON OBSERVACIONES por la limpieza pendiente y la precisión del
+contador de scripts del SDK; la cobertura autenticada ya fue ejecutada.
+
 ```bash
 npm ci
 npm run build

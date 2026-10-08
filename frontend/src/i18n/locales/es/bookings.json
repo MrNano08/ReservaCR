@@ -1,0 +1,42 @@
+{
+  "head": {
+    "ownerEyebrow": "TU AGENDA",
+    "clientEyebrow": "TU TIEMPO, ORGANIZADO",
+    "ownerTitle": "Reservas del negocio",
+    "clientTitle": "Mis reservas",
+    "description": "Consulta tus próximas citas y su historial. Todos los horarios corresponden a Costa Rica."
+  },
+  "stats": {
+    "upcoming": "Próximas citas",
+    "completed": "Completadas",
+    "cancelled": "Canceladas"
+  },
+  "filters": {
+    "upcoming": "Próximas",
+    "history": "Historial",
+    "all": "Todas"
+  },
+  "search": "Buscar reserva…",
+  "actions": {
+    "cancel": "Cancelar cita",
+    "complete": "Marcar completada",
+    "noShow": "No asistió",
+    "business": "Ver negocio ↗"
+  },
+  "empty": {
+    "title": "No hay reservas en esta vista",
+    "explore": "Explorar negocios"
+  },
+  "cancel": {
+    "title": "¿Cancelar esta cita?",
+    "reason": "Motivo (opcional)",
+    "keep": "Mantener cita",
+    "busy": "Cancelando…",
+    "confirm": "Sí, cancelar"
+  },
+  "detail": {
+    "client": "Cliente: {{name}} · {{email}} · {{phone}}",
+    "notes": "Nota: {{notes}}",
+    "reason": "Motivo: {{reason}}"
+  }
+}

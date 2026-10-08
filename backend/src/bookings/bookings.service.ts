@@ -1,3 +1,4 @@
+import { coded } from "../common/errors";
 import {
   Injectable,
   BadRequestException,
@@ -35,19 +36,19 @@ export class BookingsService {
     clientId?: string,
     m: EntityManager = db.manager,
   ) {
-    if (!validDay(day)) throw new BadRequestException("Fecha inválida.");
+    if (!validDay(day)) throw new BadRequestException(coded("BOOKING_INVALID_DATE", "Fecha inválida."));
     if (
       day < dateInCR(new Date()) ||
       day > dateInCR(new Date(Date.now() + 90 * 86400000))
     )
       throw new BadRequestException(
-        "Selecciona una fecha dentro de los próximos 90 días.",
+        coded("BOOKING_DATE_OUT_OF_RANGE", "Selecciona una fecha dentro de los próximos 90 días."),
       );
     const service = await m.findOneBy(Service, { id: serviceId, active: true });
-    if (!service) throw new NotFoundException("Servicio no disponible.");
+    if (!service) throw new NotFoundException(coded("BOOKING_SERVICE_NOT_FOUND", "Servicio no disponible."));
     const b = await m.findOneBy(Business, { id: service.businessId });
     if (!b || b.status !== "APPROVED" || !b.published)
-      throw new ConflictException("El negocio no admite nuevas reservas.");
+      throw new ConflictException(coded("BUSINESS_BOOKINGS_UNAVAILABLE", "El negocio no admite nuevas reservas."));
     const start = localInstant(day, 0),
       end = localInstant(day, 1440);
     const [hours, bookings, blocks, clientBookings] = await Promise.all([
@@ -134,7 +135,7 @@ export class BookingsService {
     const service = await db
       .getRepository(Service)
       .findOneBy({ id: data.serviceId });
-    if (!service) throw new NotFoundException("Servicio no encontrado.");
+    if (!service) throw new NotFoundException(coded("BOOKING_SERVICE_NOT_FOUND", "Servicio no encontrado."));
     return db.transaction("READ COMMITTED", async (m) => {
       // Stable lock order: client then business. Shared business capacity and cross-business client overlap are serialized.
       await m.getRepository(User).findOne({
@@ -156,7 +157,7 @@ export class BookingsService {
           existing.notes !== data.notes
         )
           throw new ConflictException(
-            "La clave de solicitud ya fue utilizada para otra reserva.",
+            coded("BOOKING_REQUEST_CONFLICT", "La clave de solicitud ya fue utilizada para otra reserva."),
           );
         return existing;
       }
@@ -172,13 +173,14 @@ export class BookingsService {
       );
       if (!slot)
         throw new ConflictException(
-          "El horario no está disponible o se cruza con otra de tus reservas. Selecciona otro.",
+          coded("BOOKING_SLOT_UNAVAILABLE", "El horario no está disponible o se cruza con otra de tus reservas. Selecciona otro."),
         );
       const b = await m.save(Booking, {
         clientId: user.id,
         businessId: service.businessId,
         serviceId: service.id,
         serviceName: available.service.name,
+        serviceNameEn: available.service.nameEn || null,
         price: available.service.price,
         startAt: start,
         endAt: new Date(slot.endAt),
@@ -199,17 +201,20 @@ export class BookingsService {
     const q = db
       .getRepository(Booking)
       .createQueryBuilder("r")
-      .leftJoinAndSelect("r.business", "b");
+      .leftJoinAndSelect("r.business", "b")
+      .leftJoinAndSelect("r.service", "s");
     if (user.role === "CLIENT") q.where("r.clientId=:id", { id: user.id });
     else if (user.role === "BUSINESS")
       q.where("b.ownerId=:id", { id: user.id }).leftJoinAndSelect(
         "r.client",
         "c",
       );
-    else throw new ForbiddenException();
+    else throw new ForbiddenException(coded("BOOKING_FORBIDDEN", "Forbidden"));
     const items = await q.orderBy("r.startAt", "DESC").take(1000).getMany();
-    return items.map(({ business, client, ...r }) => ({
+    return items.map(({ business, client, service, ...r }) => ({
       ...r,
+      // Keep the historical name; use a current translation only when its Spanish name still matches.
+      serviceNameEn: r.serviceNameEn || (service?.name === r.serviceName ? service.nameEn : null),
       business: {
         id: business.id,
         name: business.name,
@@ -244,7 +249,7 @@ export class BookingsService {
         (initial.business.ownerId === user.id && user.role === "BUSINESS")
       )
     )
-      throw new NotFoundException("Reserva no encontrada.");
+      throw new NotFoundException(coded("BOOKING_NOT_FOUND", "Reserva no encontrada."));
     return db.transaction("READ COMMITTED", async (m) => {
       await m.getRepository(User).findOne({
         where: { id: initial.clientId },
@@ -260,7 +265,7 @@ export class BookingsService {
       });
       if (b.status === status) return b;
       if (b.status !== "CONFIRMED")
-        throw new ConflictException("La reserva ya tiene un estado final.");
+        throw new ConflictException(coded("BOOKING_INVALID_STATUS", "La reserva ya tiene un estado final."));
       if (status === "CANCELLED") {
         if (
           user.role === "CLIENT" &&
@@ -268,19 +273,19 @@ export class BookingsService {
             business!.cancellationMinutes * 60000
         )
           throw new ConflictException(
-            `Solo puedes cancelar con al menos ${business!.cancellationMinutes} minutos de anticipación.`,
+            coded("BOOKING_CANCELLATION_TOO_LATE", `Solo puedes cancelar con al menos ${business!.cancellationMinutes} minutos de anticipación.`),
           );
         if (b.startAt <= new Date())
           throw new ConflictException(
-            "No puedes cancelar una cita que ya comenzó.",
+            coded("BOOKING_CANNOT_CANCEL", "No puedes cancelar una cita que ya comenzó."),
           );
         b.cancelledAt = new Date();
         b.cancellationReason = reason;
       } else {
-        if (user.role !== "BUSINESS") throw new ForbiddenException();
+        if (user.role !== "BUSINESS") throw new ForbiddenException(coded("BOOKING_FORBIDDEN", "Forbidden"));
         if (b.endAt > new Date())
           throw new ConflictException(
-            "Espera a que finalice el horario de la cita.",
+            coded("BOOKING_NOT_FINISHED", "Espera a que finalice el horario de la cita."),
           );
       }
       b.status = status;

@@ -1,0 +1,10 @@
+{
+  "eyebrow": "UP TO DATE",
+  "title": "Your notifications",
+  "description": "Appointment confirmations and changes, always at hand.",
+  "read": "Mark as read",
+  "empty": {
+    "title": "All quiet here",
+    "description": "Your notifications will appear when you book an appointment."
+  }
+}

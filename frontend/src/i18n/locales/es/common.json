@@ -1,0 +1,53 @@
+{
+  "language": {
+    "label": "Idioma"
+  },
+  "loading": "Cargando…",
+  "busy": "Un momento…",
+  "actions": {
+    "home": "Volver al inicio",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "pagination": "Página {{page}} de {{pages}}",
+  "price": {
+    "ask": "Consultar precio"
+  },
+  "business": {
+    "online": "Reservas en línea",
+    "services": "Ver servicios →"
+  },
+  "access": {
+    "denied": "No tienes acceso a esta sección",
+    "notFound": "Esta página no existe"
+  },
+  "meta": {
+    "title": "ReservaCR · Tu tiempo, mejor reservado",
+    "description": "Encuentra negocios locales y reserva tu próxima cita con ReservaCR."
+  },
+  "status": {
+    "PENDING": "Pendiente",
+    "APPROVED": "Aprobado",
+    "REJECTED": "Rechazado",
+    "SUSPENDED": "Suspendido",
+    "CONFIRMED": "Confirmada",
+    "CANCELLED": "Cancelada",
+    "COMPLETED": "Completada",
+    "NO_SHOW": "No asistió",
+    "SENT": "Enviado",
+    "FAILED": "Fallido",
+    "ACTIVE": "Activo",
+    "INACTIVE": "Inactivo",
+    "SUCCESS": "Exitosa"
+  },
+  "categories": {
+    "food": "Comida",
+    "clothing": "Ropa",
+    "beauty": "Belleza",
+    "barber": "Barbería",
+    "health": "Salud",
+    "wellness": "Bienestar",
+    "professional": "Servicios profesionales",
+    "other": "Otros"
+  }
+}

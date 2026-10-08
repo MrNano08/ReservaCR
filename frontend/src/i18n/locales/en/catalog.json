@@ -1,0 +1,47 @@
+{
+  "hero": {
+    "eyebrow": "YOUR NEXT OPENING, RIGHT HERE",
+    "first": "Less hassle.",
+    "more": "More",
+    "time": "time for you.",
+    "description": "Discover businesses near you and find the perfect time for your next appointment."
+  },
+  "search": {
+    "label": "Search businesses",
+    "placeholder": "What would you like to book?",
+    "province": "Province",
+    "all": "All of Costa Rica",
+    "submit": "Search"
+  },
+  "perks": {
+    "minutes": "Book in minutes",
+    "approved": "Approved businesses",
+    "availability": "Instant availability"
+  },
+  "art": {
+    "moment": "A moment for you",
+    "appointment": "Your next appointment",
+    "day": "Your day, your pace.",
+    "steps": "FIND · CHOOSE · BOOK"
+  },
+  "list": {
+    "eyebrow": "DISCOVER LOCAL",
+    "title": "A great place to start",
+    "explore": "Explore your way",
+    "all": "All businesses"
+  },
+  "results_one": "{{count}} business found",
+  "results_other": "{{count}} businesses found",
+  "resultsSearch_one": "{{count}} business found for “{{search}}”",
+  "resultsSearch_other": "{{count}} businesses found for “{{search}}”",
+  "empty": {
+    "title": "No businesses match these filters",
+    "description": "Try another category, location or name.",
+    "clear": "Clear filters"
+  },
+  "cta": {
+    "eyebrow": "FOR LOCAL BUSINESS OWNERS",
+    "title": "Your business. Closer to its customers.",
+    "description": "Manage your services, schedules and bookings in one place."
+  }
+}

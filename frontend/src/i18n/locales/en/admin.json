@@ -1,0 +1,86 @@
+{
+  "head": {
+    "eyebrow": "ADMINISTRATION",
+    "title": "A catalog in good hands",
+    "description": "Review applications, manage categories and view platform activity."
+  },
+  "tabs": {
+    "businesses": "Businesses",
+    "categories": "Categories",
+    "mail": "Emails",
+    "audit": "Activity"
+  },
+  "businesses": {
+    "title": "Applications and businesses",
+    "empty": "No businesses registered yet"
+  },
+  "filters": {
+    "label": "Filter by status",
+    "all": "All statuses",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "suspended": "Suspended"
+  },
+  "table": {
+    "business": "Business",
+    "location": "Location",
+    "status": "Status",
+    "publication": "Publication",
+    "action": "Action",
+    "date": "Date",
+    "resource": "Resource",
+    "detail": "Details"
+  },
+  "publication": {
+    "visible": "Published",
+    "hidden": "Hidden"
+  },
+  "actions": {
+    "review": "Review",
+    "add": "Add",
+    "save": "Save",
+    "retry": "Retry",
+    "close": "Close",
+    "approve": "Approve",
+    "reject": "Reject",
+    "suspend": "Suspend"
+  },
+  "categories": {
+    "title": "Catalog categories",
+    "new": "New category",
+    "placeholder": "New category name",
+    "name": "Category name",
+    "active": "Active",
+    "hint": "Deactivating a category prevents its use in new registrations. Existing businesses keep their category and history.",
+    "translation": "Translated category ES/EN",
+    "original": "Keep custom name"
+  },
+  "mail": {
+    "title": "Notification status",
+    "hint": "Email failure does not remove the booking. Pending deliveries are retried automatically when SMTP is configured.",
+    "attempts_one": "{{count}} attempt",
+    "attempts_other": "{{count}} attempts"
+  },
+  "audit": {
+    "title": "Latest activity",
+    "actions": {
+      "BUSINESS_APPROVED": "Business approved",
+      "BUSINESS_REJECTED": "Business rejected",
+      "BUSINESS_SUSPENDED": "Business suspended",
+      "CATEGORY_CREATE": "Category created",
+      "CATEGORY_UPDATE": "Category updated",
+      "BOOKING_CONFIRMED": "Booking confirmed",
+      "BOOKING_CANCELLED": "Booking cancelled",
+      "BOOKING_COMPLETED": "Booking completed",
+      "BOOKING_NO_SHOW": "No-show"
+    }
+  },
+  "review": {
+    "services": "Services",
+    "hours": "Opening hours",
+    "notes": "Notes (required to reject or suspend)",
+    "contact": "Phone: {{phone}} · {{capacity}} spots",
+    "duration": "{{minutes}} min"
+  }
+}

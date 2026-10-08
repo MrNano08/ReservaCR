@@ -1,3 +1,4 @@
+import { coded } from "../common/errors";
 import {
   Injectable,
   NotFoundException,
@@ -27,7 +28,7 @@ export class BusinessesService {
       .where("b.ownerId=:id", { id: user.id });
     if (lock) q.setLock("pessimistic_write");
     const b = await q.getOne();
-    if (!b) throw new NotFoundException("Primero registra tu negocio.");
+    if (!b) throw new NotFoundException(coded("OWNER_BUSINESS_NOT_FOUND", "Primero registra tu negocio."));
     return b;
   }
   async detail(id: string, publicOnly = true) {
@@ -35,7 +36,7 @@ export class BusinessesService {
       .getRepository(Business)
       .findOne({ where: { id }, relations: { category: true } });
     if (!b || (publicOnly && (!b.published || b.status !== "APPROVED")))
-      throw new NotFoundException("El negocio no está disponible.");
+      throw new NotFoundException(coded("BUSINESS_NOT_FOUND", "El negocio no está disponible."));
     const [services, hours, blocks] = await Promise.all([
       db.getRepository(Service).find({
         where: { businessId: id, ...(publicOnly ? { active: true } : {}) },
@@ -112,7 +113,7 @@ export class BusinessesService {
           .getRepository(Category)
           .findOneBy({ id: data.categoryId, active: true }))
       )
-        throw new BadRequestException("Selecciona una categoría activa.");
+        throw new BadRequestException(coded("BUSINESS_CATEGORY_INVALID", "Selecciona una categoría activa."));
       if (
         b &&
         data.capacity !== undefined &&
@@ -128,7 +129,7 @@ export class BusinessesService {
           .getCount())
       )
         throw new ConflictException(
-          "No reduzcas los cupos mientras existan reservas futuras.",
+          coded("OWNER_CAPACITY_CONFLICT", "No reduzcas los cupos mientras existan reservas futuras."),
         );
       b = m
         .getRepository(Business)
@@ -147,7 +148,7 @@ export class BusinessesService {
             .getRepository(Service)
             .findOneBy({ id: serviceId, businessId: b.id })
         : m.getRepository(Service).create({ businessId: b.id });
-      if (!s) throw new NotFoundException("Servicio no encontrado.");
+      if (!s) throw new NotFoundException(coded("OWNER_SERVICE_NOT_FOUND", "Servicio no encontrado."));
       s = m.getRepository(Service).merge(s, data);
       await m.save(s);
       if (
@@ -165,7 +166,7 @@ export class BusinessesService {
       for (const h of hours) {
         if (h.startMinute! >= h.endMinute!)
           throw new BadRequestException(
-            "La apertura debe ser anterior al cierre.",
+            coded("OWNER_INVALID_SCHEDULE", "La apertura debe ser anterior al cierre."),
           );
         if (
           hours.some(
@@ -177,7 +178,7 @@ export class BusinessesService {
           )
         )
           throw new BadRequestException(
-            "Los horarios del mismo día no pueden superponerse.",
+            coded("OWNER_SCHEDULE_OVERLAP", "Los horarios del mismo día no pueden superponerse."),
           );
       }
       const future = await m
@@ -202,7 +203,7 @@ export class BusinessesService {
         )
       )
         throw new ConflictException(
-          "El nuevo horario dejaría reservas vigentes fuera de atención.",
+          coded("OWNER_SCHEDULE_CONFLICT", "El nuevo horario dejaría reservas vigentes fuera de atención."),
         );
       await m.delete(OpeningHour, { businessId: b.id });
       if (hours.length)
@@ -219,7 +220,7 @@ export class BusinessesService {
       const b = await this.owned(user, m, true);
       if (published) {
         if (b.status !== "APPROVED")
-          throw new ForbiddenException("El negocio debe estar aprobado.");
+          throw new ForbiddenException(coded("BUSINESS_NOT_APPROVED", "El negocio debe estar aprobado."));
         if (
           !(await m
             .getRepository(Service)
@@ -227,7 +228,7 @@ export class BusinessesService {
           !(await m.getRepository(OpeningHour).countBy({ businessId: b.id }))
         )
           throw new BadRequestException(
-            "Configura al menos un servicio activo y un horario.",
+            coded("BUSINESS_CONFIGURATION_REQUIRED", "Configura al menos un servicio activo y un horario."),
           );
       }
       b.published = published;
@@ -239,7 +240,7 @@ export class BusinessesService {
       const b = await this.owned(user, m, true);
       if (b.status !== "REJECTED")
         throw new ConflictException(
-          "Solo un negocio rechazado puede volver a solicitar revisión.",
+          coded("BUSINESS_REVIEW_NOT_ALLOWED", "Solo un negocio rechazado puede volver a solicitar revisión."),
         );
       b.status = "PENDING";
       b.published = false;
@@ -254,7 +255,7 @@ export class BusinessesService {
       const b = await this.owned(user, m, true);
       if (data.startAt >= data.endAt || data.endAt <= new Date())
         throw new BadRequestException(
-          "El bloqueo debe tener un rango válido y futuro.",
+          coded("OWNER_INVALID_BLOCK_RANGE", "El bloqueo debe tener un rango válido y futuro."),
         );
       const count = await m
         .getRepository(Booking)
@@ -266,7 +267,7 @@ export class BusinessesService {
         .getCount();
       if (count)
         throw new ConflictException(
-          "Hay reservas en ese rango. Cancélalas antes de bloquearlo.",
+          coded("OWNER_BLOCK_CONFLICT", "Hay reservas en ese rango. Cancélalas antes de bloquearlo."),
         );
       return m.save(Block, { ...data, businessId: b.id });
     });
@@ -276,7 +277,7 @@ export class BusinessesService {
       const b = await this.owned(user, m, true);
       const result = await m.delete(Block, { id, businessId: b.id });
       if (!result.affected)
-        throw new NotFoundException("Bloqueo no encontrado.");
+        throw new NotFoundException(coded("OWNER_BLOCK_NOT_FOUND", "Bloqueo no encontrado."));
       return { ok: true };
     });
   }
@@ -290,7 +291,7 @@ export class BusinessesService {
       const b = await m
         .getRepository(Business)
         .findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
-      if (!b) throw new NotFoundException();
+      if (!b) throw new NotFoundException(coded("BUSINESS_NOT_FOUND", "Not Found"));
       b.status = status;
       b.reviewNote = reviewNote;
       if (status !== "APPROVED") b.published = false;

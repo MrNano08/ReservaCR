@@ -1,3 +1,4 @@
+import { errorKey } from "../i18n/errors";
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -26,16 +27,16 @@ export async function api<T = any>(
   } catch {
     throw new ApiError(
       0,
-      "No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+      "errors:NETWORK_ERROR",
     );
   }
   const data = await response.json().catch(() => null);
   if (!response.ok)
     throw new ApiError(
       response.status,
-      Array.isArray(data?.message)
+      errorKey(data?.code, Array.isArray(data?.message)
         ? data.message.join(". ")
-        : data?.message || "No se pudo completar la solicitud.",
+        : typeof data?.message === "string" && data.message ? data.message : "errors:REQUEST_FAILED"),
     );
   return data;
 }
