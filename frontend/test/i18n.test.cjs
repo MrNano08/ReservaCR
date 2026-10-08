@@ -182,3 +182,47 @@ test('phase 2 screens reference existing keys and contain no static visible pros
     visit(source);
   }
 });
+
+test('password recovery submits the current resolved UI language and preserves reset payload', async () => {
+  const path = require('node:path');
+  const filename = path.join(__dirname, '../src/pages/PasswordRecovery.tsx');
+  const output = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+  }).outputText;
+  const token = 'a'.repeat(64);
+  const calls = [];
+  const { send } = require('../src/services/api.ts');
+  const react = require('react');
+  const module = { exports: {} };
+  const dependencies = {
+    'react': { ...react, useState: value => [value, () => {}] },
+    'react-i18next': { useTranslation: () => ({ t: i18n.t.bind(i18n), i18n }) },
+    'react-router-dom': { Link: 'a', useSearchParams: () => [new URLSearchParams({ token })] },
+    '../i18n/validation': { useLocalizedValidation: () => ({}) },
+    '../components/UI': { ErrorBox: 'aside', Field: 'label' },
+    '../services/api': { send, api: async (url, options) => calls.push({ url, body: JSON.parse(options.body) }) },
+  };
+  new Function('require', 'module', 'exports', output)(name => dependencies[name] ?? require(name), module, module.exports);
+  function findForm(element) {
+    if (!element || typeof element !== 'object') return;
+    if (element.type === 'form') return element;
+    for (const child of react.Children.toArray(element.props?.children)) {
+      const found = findForm(child);
+      if (found) return found;
+    }
+  }
+  const originalFormData = global.FormData;
+  global.FormData = class { constructor() { return new Map([['email', 'qa@example.test'], ['password', 'NewPassword123!'], ['confirm', 'NewPassword123!']]); } };
+  try {
+    // Render in ES, then switch before submit: the handler must use the active language.
+    await i18n.changeLanguage('es');
+    const form = findForm(module.exports.default({}));
+    for (const [selected, expected] of [['en', 'en'], ['es', 'es'], ['en-US', 'en'], ['fr', 'es']]) {
+      await i18n.changeLanguage(selected);
+      await form.props.onSubmit({ preventDefault() {}, currentTarget: {} });
+      assert.deepEqual(calls.at(-1), { url: '/auth/forgot-password', body: { email: 'qa@example.test', language: expected } });
+    }
+    await findForm(module.exports.default({ reset: true })).props.onSubmit({ preventDefault() {}, currentTarget: {} });
+    assert.deepEqual(calls.at(-1), { url: '/auth/reset-password', body: { token, password: 'NewPassword123!' } });
+  } finally { global.FormData = originalFormData; await i18n.changeLanguage('es'); }
+});

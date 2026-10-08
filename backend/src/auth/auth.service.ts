@@ -11,7 +11,7 @@ import { compare, hash } from "bcryptjs";
 import { MoreThan } from "typeorm";
 import nodemailer from "nodemailer";
 import { passwordResetMessage } from "../notifications/templates";
-import { languageOf } from "../common/language";
+import { languageOf, Language } from "../common/language";
 import { config } from "../common/config";
 import { db } from "../database/data-source";
 import { User, Session, PasswordReset, Role } from "../database/entities";
@@ -30,7 +30,7 @@ export const safeUser = (u: User) => ({
 
 @Injectable()
 export class AuthService {
-  async requestPasswordReset(email: string) {
+  async requestPasswordReset(email: string, language?: Language) {
     if (!config.SMTP_HOST)
       throw new ServiceUnavailableException(
         coded("MAIL_NOT_CONFIGURED", "El correo no está configurado. Contacta al administrador."),
@@ -67,7 +67,7 @@ export class AuthService {
       await transport.sendMail({
         from: config.SMTP_FROM,
         to: user.email,
-        ...passwordResetMessage(user.language, link),
+        ...passwordResetMessage(language ?? user.language ?? "es", link),
       });
     } catch {
       await repo.delete({ id: reset.id });

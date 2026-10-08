@@ -51,8 +51,8 @@ export class AuthController {
   @Post("forgot-password")
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   forgot(@Body() body: unknown) {
-    const d = parse(z.object({ email }).strict(), body);
-    return this.auth.requestPasswordReset(d.email);
+    const d = parse(z.object({ email, language: z.enum(["es", "en"]).optional() }).strict(), body);
+    return this.auth.requestPasswordReset(d.email, d.language);
   }
   @Post("reset-password")
   @Throttle({ default: { limit: 5, ttl: 60000 } })

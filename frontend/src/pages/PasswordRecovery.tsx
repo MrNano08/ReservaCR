@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api, send } from "../services/api";
 import { ErrorBox, Field } from "../components/UI";
 export default function PasswordRecovery({ reset = false }: { reset?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const validation = useLocalizedValidation();
   const [params] = useSearchParams();
   const [busy, setBusy] = useState(false);
@@ -21,7 +21,7 @@ export default function PasswordRecovery({ reset = false }: { reset?: boolean })
           const data = Object.fromEntries(new FormData(e.currentTarget));
           if (reset && data.password !== data.confirm) { setError("validation:passwordMismatch"); return; }
           setBusy(true);
-          try { await api(reset ? "/auth/reset-password" : "/auth/forgot-password", send("POST", reset ? { token, password: data.password } : { email: data.email })); setDone(true); }
+          try { await api(reset ? "/auth/reset-password" : "/auth/forgot-password", send("POST", reset ? { token, password: data.password } : { email: data.email, language: i18n.resolvedLanguage?.split("-")[0] === "en" ? "en" : "es" })); setDone(true); }
           catch (err) { setError((err as Error).message); }
           finally { setBusy(false); }
         }}>

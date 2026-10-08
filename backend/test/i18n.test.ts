@@ -6,6 +6,9 @@ import { resolve } from "node:path";
 import { BadRequestException, HttpException, UnauthorizedException } from "@nestjs/common";
 import { z } from "zod";
 import nodemailer from "nodemailer";
+import { createServer, Socket } from "node:net";
+import { compare } from "bcryptjs";
+import { AuthController } from "../src/auth/auth.controller";
 import { EntityManager } from "typeorm";
 import { languageOf } from "../src/common/language";
 import { coded, errorResponse, Errors } from "../src/common/errors";
@@ -13,7 +16,7 @@ import { parse } from "../src/common/validation";
 import { bookingMessage, passwordResetMessage, messageHtml } from "../src/notifications/templates";
 import { enqueueBooking, NotificationsService } from "../src/notifications/notifications.service";
 import { AuthService, safeUser } from "../src/auth/auth.service";
-import { User, Business, Booking, Notification, PasswordReset } from "../src/database/entities";
+import { User, Business, Booking, Notification, PasswordReset, Session } from "../src/database/entities";
 import { db } from "../src/database/data-source";
 import { config } from "../src/common/config";
 import { UserLanguage1790000000002 } from "../src/database/migrations/UserLanguage";
@@ -85,36 +88,106 @@ test("cola: idioma de cada destinatario, no de otra sesión; solo crea nuevos su
   assert.equal(saved.length, 4);
 });
 
-test("Auth: recuperación usa idioma del usuario; desconocido no envía ni revela existencia", async () => {
-  const originalRepository = db.getRepository;
-  const originalTransport = nodemailer.createTransport;
-  const originalHost = config.SMTP_HOST;
-  const sent: { subject: string; text: string; to: string }[] = [];
-  let language = "es", exists = true, resetCount = 0, closed = 0;
-  const user = Object.assign(new User(), { id: "u", email: "qa@example.test" });
-  db.getRepository = ((entity: unknown) => entity === User ? {
-    findOneBy: async () => exists ? { ...user, language } : null,
-  } : entity === PasswordReset ? {
-    create: (value: unknown) => value,
-    save: async (value: object) => { resetCount++; return { ...value, id: "reset" }; },
-  } : assert.fail("unexpected repository")) as unknown as typeof db.getRepository;
-  nodemailer.createTransport = (() => ({ sendMail: async (mail: typeof sent[number]) => { sent.push(mail); }, close: () => { closed++; } })) as unknown as typeof nodemailer.createTransport;
-  config.SMTP_HOST = "qa.invalid";
+test("Auth: idioma solicitado, fallback, validación y token por SMTP local sin DB", async () => {
+  const originalRepository = db.getRepository, originalTransaction = db.transaction;
+  const originalConfig = { ...config };
+  const messages: string[] = [];
+  const sockets = new Set<Socket>();
+  const server = createServer(socket => {
+    sockets.add(socket);
+    socket.on("close", () => sockets.delete(socket));
+    socket.setEncoding("utf8");
+    socket.write("220 localhost SMTP QA\r\n");
+    let buffer = "", receiving = false, message = "";
+    socket.on("data", chunk => {
+      buffer += chunk;
+      let end: number;
+      while ((end = buffer.indexOf("\r\n")) >= 0) {
+        const line = buffer.slice(0, end); buffer = buffer.slice(end + 2);
+        if (receiving) {
+          if (line === ".") {
+            messages.push(message); message = ""; receiving = false;
+            socket.write("250 accepted\r\n");
+          } else message += line.replace(/^\.\./, ".") + "\r\n";
+        } else if (/^EHLO/.test(line)) socket.write("250 localhost\r\n");
+        else if (line === "DATA") { receiving = true; socket.write("354 send data\r\n"); }
+        else if (line === "QUIT") socket.end("221 bye\r\n");
+        else socket.write("250 OK\r\n");
+      }
+    });
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  Object.assign(config, { SMTP_HOST: "127.0.0.1", SMTP_PORT: address.port, SMTP_SECURE: "false", SMTP_USER: undefined, SMTP_PASSWORD: undefined });
+  const user = { id: "u", email: "qa@example.test", language: "es" as string | undefined, passwordHash: "original" };
+  let exists = true, resetCount = 0;
+  let stored: { userId: string; tokenHash: string; expiresAt: Date } | undefined;
+  const deleted: unknown[] = [];
+  const userRepo = {
+    findOneBy: async () => exists ? user : null,
+    update: async (_where: unknown, value: { passwordHash: string }) => { user.passwordHash = value.passwordHash; },
+  };
+  const resetRepo = {
+    create: (value: typeof stored) => value,
+    save: async (value: NonNullable<typeof stored>) => { resetCount++; stored = value; return { ...value, id: "reset" }; },
+    createQueryBuilder: () => {
+      const query = {
+        where: (_sql: string, params: { hash: string }) => { if (stored) assert.equal(params.hash, stored.tokenHash); return query; },
+        setLock: () => query, getOne: async () => stored,
+      };
+      return query;
+    },
+    delete: async () => { stored = undefined; deleted.push(PasswordReset); },
+  };
+  db.getRepository = ((entity: unknown) => entity === User ? userRepo : entity === PasswordReset ? resetRepo
+    : entity === Session ? { delete: async () => { deleted.push(Session); } } : assert.fail("unexpected repository")) as unknown as typeof db.getRepository;
+  db.transaction = ((run: (manager: unknown) => Promise<unknown>) => run({ getRepository: db.getRepository })) as typeof db.transaction;
   try {
-    const auth = new AuthService();
-    for (language of ["es", "en", "invalid"]) await auth.requestPasswordReset(user.email);
-    assert.ok(sent[0].subject.startsWith("Recuperar"));
-    assert.ok(sent[1].subject.startsWith("Reset"));
-    assert.ok(sent[2].subject.startsWith("Recuperar"));
-    for (const mail of sent) {
-      assert.equal(mail.to, user.email);
-      assert.match(mail.text, /restablecer-contrasena\?token=[a-f0-9]{64}/);
+    const controller = new AuthController(new AuthService());
+    const cases = [
+      { saved: "es", requested: "en", expected: "en" },
+      { saved: "en", requested: "es", expected: "es" },
+      { saved: "en", requested: undefined, expected: "en" },
+      { saved: "es", requested: undefined, expected: "es" },
+      { saved: "invalid", requested: undefined, expected: "es" },
+      { saved: undefined, requested: undefined, expected: "es" },
+    ];
+    for (const c of cases) {
+      user.language = c.saved;
+      const body = { email: user.email, ...(c.requested ? { language: c.requested } : {}) };
+      assert.deepEqual(await controller.forgot(body), { ok: true });
+      assert.equal(user.language, c.saved, "la solicitud no modifica users.language");
+      assert.equal(user.passwordHash, "original");
+      const raw = messages.at(-1)!;
+      const subject = raw.match(/^Subject: (.*)$/m)![1].trim();
+      const decoded = subject.replace(/=\?UTF-8\?([BQ])\?([^?]+)\?=/gi, (_match, encoding, value) =>
+        encoding.toUpperCase() === "B" ? Buffer.from(value, "base64").toString("utf8")
+          : decodeURIComponent(value.replace(/_/g, " ").replace(/=([a-f0-9]{2})/gi, "%$1")));
+      assert.ok(decoded.startsWith(c.expected === "en" ? "Reset password" : "Recuperar contraseña"), decoded);
+      assert.ok(raw.includes(c.expected === "en" ? "You requested" : "Solicitaste"));
+      assert.match(raw.replace(/=\r\n/g, ""), /token(?:=|=3D)[a-f0-9]{64}/);
     }
+    const count = messages.length;
+    assert.throws(() => controller.forgot({ email: user.email, language: "fr" }), error =>
+      error instanceof BadRequestException && error.getStatus() === 400);
     exists = false;
-    assert.deepEqual(await auth.requestPasswordReset("missing@example.test"), { ok: true });
-    assert.equal(sent.length, 3); assert.equal(resetCount, 3); assert.equal(closed, 3);
+    for (const language of ["en", "es", undefined]) {
+      assert.deepEqual(await controller.forgot({ email: "missing@example.test", ...(language ? { language } : {}) }), { ok: true });
+    }
+    assert.equal(messages.length, count); assert.equal(resetCount, cases.length);
+    const received = messages.at(-1)!.replace(/=\r\n/g, "");
+    const token = received.match(/token(?:=|=3D)([a-f0-9]{64})/)![1];
+    assert.deepEqual(await controller.reset({ token, password: "NewPassword123!" }), { ok: true });
+    assert.ok(await compare("NewPassword123!", user.passwordHash));
+    assert.equal(user.language, undefined);
+    assert.deepEqual(deleted, [Session, PasswordReset]);
+    await assert.rejects(controller.reset({ token, password: "AnotherPassword123!" }), BadRequestException);
   } finally {
-    db.getRepository = originalRepository; nodemailer.createTransport = originalTransport; config.SMTP_HOST = originalHost;
+    db.getRepository = originalRepository; db.transaction = originalTransaction;
+    Object.assign(config, originalConfig);
+    for (const socket of sockets) socket.destroy();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });
 
