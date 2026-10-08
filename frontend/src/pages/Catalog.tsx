@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -13,7 +14,9 @@ import { useLoad } from "../hooks/useLoad";
 import { Business, Category } from "../types";
 import { BusinessCard, ErrorBox, Loading, Empty } from "../components/UI";
 import { provinces } from "../utils/format";
+import { categoryLabel } from "../i18n/content";
 export default function Catalog() {
+  const { t } = useTranslation();
   const [q, setQ] = useState(""),
     [search, setSearch] = useState(""),
     [category, setCategory] = useState(""),
@@ -36,16 +39,15 @@ export default function Catalog() {
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow">
-            <span className="dot" /> TU PRÓXIMO ESPACIO, AQUÍ
+            <span className="dot" /> {t("catalog:hero.eyebrow")}
           </span>
           <h1>
-            Menos vueltas.
+            {t("catalog:hero.first")}
             <br />
-            Más <em>tiempo para ti.</em>
+            {t("catalog:hero.more")} <em>{t("catalog:hero.time")}</em>
           </h1>
           <p>
-            Descubre negocios cerca de ti y encuentra el momento perfecto para
-            tu próxima cita.
+            {t("catalog:hero.description")}
           </p>
           <form
             className="search-bar"
@@ -57,42 +59,42 @@ export default function Catalog() {
           >
             <Search size={21} />
             <input
-              aria-label="Buscar negocios"
-              placeholder="¿Qué te gustaría reservar?"
+              aria-label={t("catalog:search.label")}
+              placeholder={t("catalog:search.placeholder")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
             <span className="search-divider" />
             <MapPin size={19} />
             <select
-              aria-label="Provincia"
+              aria-label={t("catalog:search.province")}
               value={province}
               onChange={(e) => {
                 setProvince(e.target.value);
                 setPage(1);
               }}
             >
-              <option value="">Toda Costa Rica</option>
+              <option value="">{t("catalog:search.all")}</option>
               {provinces.map((p) => (
                 <option key={p}>{p}</option>
               ))}
             </select>
             <button className="button" type="submit">
-              Buscar <ArrowUpRight size={18} />
+              {t("catalog:search.submit")} <ArrowUpRight size={18} />
             </button>
           </form>
           <div className="hero-perks">
             <span>
               <CalendarCheck size={16} />
-              Reserva en minutos
+              {t("catalog:perks.minutes")}
             </span>
             <span>
               <ShieldCheck size={16} />
-              Negocios aprobados
+              {t("catalog:perks.approved")}
             </span>
             <span>
               <Clock3 size={16} />
-              Disponibilidad al instante
+              {t("catalog:perks.availability")}
             </span>
           </div>
         </div>
@@ -101,11 +103,11 @@ export default function Catalog() {
           <div className="decor-ring ring-two" />
           <div className="floating-label">
             <span className="dot" />
-            Un momento para ti
+            {t("catalog:art.moment")}
           </div>
           <div className="calendar-art">
             <div className="calendar-top">
-              <span>Tu próxima cita</span>
+              <span>{t("catalog:art.appointment")}</span>
               <CalendarCheck size={24} />
             </div>
             <div className="calendar-lines">
@@ -124,20 +126,20 @@ export default function Catalog() {
               ))}
             </div>
             <div className="calendar-bottom">
-              <span className="check-circle">✓</span>Tu día, a tu ritmo.
+              <span className="check-circle">✓</span>{t("catalog:art.day")}
             </div>
           </div>
-          <span className="visual-note">ENCUENTRA · ELIGE · RESERVA</span>
+          <span className="visual-note">{t("catalog:art.steps")}</span>
         </div>
       </section>
       <section className="catalog-section">
         <div className="section-title">
           <div>
-            <span className="eyebrow">DESCUBRE LO LOCAL</span>
-            <h2>Un buen lugar para empezar</h2>
+            <span className="eyebrow">{t("catalog:list.eyebrow")}</span>
+            <h2>{t("catalog:list.title")}</h2>
           </div>
           <span className="muted">
-            <SlidersHorizontal size={15} /> Explora a tu manera
+            <SlidersHorizontal size={15} /> {t("catalog:list.explore")}
           </span>
         </div>
         <div className="chips">
@@ -148,7 +150,7 @@ export default function Catalog() {
               setPage(1);
             }}
           >
-            Todos los negocios
+            {t("catalog:list.all")}
           </button>
           {categories.data?.map((c) => (
             <button
@@ -159,7 +161,7 @@ export default function Catalog() {
                 setPage(1);
               }}
             >
-              {c.name}
+              {categoryLabel(c)}
             </button>
           ))}
         </div>
@@ -169,7 +171,7 @@ export default function Catalog() {
         ) : data?.items.length ? (
           <>
             <div className="result-meta">
-              {data.total} negocios encontrados {search && `para “${search}”`}
+              {t(search ? "catalog:resultsSearch" : "catalog:results", { count: data.total, search })}
             </div>
             <div className="business-grid">
               {data.items.map((b) => (
@@ -181,23 +183,23 @@ export default function Catalog() {
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Anterior
+                {t("common:actions.previous")}
               </button>
               <span>
-                Página {page} de {data.pages}
+                {t("common:pagination", { page, pages: data.pages })}
               </span>
               <button
                 disabled={page >= data.pages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Siguiente
+                {t("common:actions.next")}
               </button>
             </div>
           </>
         ) : (
           !error && (
-            <Empty title="No encontramos negocios con esos filtros">
-              <p>Prueba con otra categoría, ubicación o nombre.</p>
+            <Empty title={t("catalog:empty.title")}>
+              <p>{t("catalog:empty.description")}</p>
               <button
                 onClick={() => {
                   setQ("");
@@ -207,7 +209,7 @@ export default function Catalog() {
                   setPage(1);
                 }}
               >
-                Limpiar filtros
+                {t("catalog:empty.clear")}
               </button>
             </Empty>
           )
@@ -215,12 +217,12 @@ export default function Catalog() {
       </section>
       <section className="business-cta">
         <div>
-          <span className="eyebrow">PARA QUIENES HACEN LO LOCAL</span>
-          <h2>Tu negocio. Más cerca de sus clientes.</h2>
-          <p>Organiza tus servicios, horarios y reservas en un solo lugar.</p>
+          <span className="eyebrow">{t("catalog:cta.eyebrow")}</span>
+          <h2>{t("catalog:cta.title")}</h2>
+          <p>{t("catalog:cta.description")}</p>
         </div>
         <Link className="button" to="/registro?rol=negocio">
-          Agregar mi negocio <ArrowUpRight size={18} />
+          {t("navigation:addBusiness")} <ArrowUpRight size={18} />
         </Link>
       </section>
     </>

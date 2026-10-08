@@ -1,9 +1,13 @@
+import { useTranslation } from "react-i18next";
+import { useLocalizedValidation } from "../i18n/validation";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck, ArrowRight } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { ErrorBox, Field } from "../components/UI";
 export default function Auth({ register = false }: { register?: boolean }) {
+  const { t } = useTranslation();
+  const validation = useLocalizedValidation();
   const [params] = useSearchParams();
   const [role, setRole] = useState(
     params.get("rol") === "negocio" ? "BUSINESS" : "CLIENT",
@@ -15,27 +19,25 @@ export default function Auth({ register = false }: { register?: boolean }) {
   return (
     <div className="auth-layout">
       <div className="auth-story">
-        <span className="eyebrow">BIENVENIDO A RESERVACR</span>
+        <span className="eyebrow">{t("auth:story.welcome")}</span>
         <h1>
-          Tu próximo
+          {t("auth:story.first")}
           <br />
-          buen momento
+          {t("auth:story.second")}
           <br />
-          <em>empieza aquí.</em>
+          <em>{t("auth:story.third")}</em>
         </h1>
         <p>
-          Negocios locales. Horarios claros.
+          {t("auth:story.local")}
           <br />
-          Una agenda que se adapta a ti.
+          {t("auth:story.schedule")}
         </p>
         <CalendarCheck size={100} strokeWidth={1} />
       </div>
       <section className="panel auth-panel">
-        <h2>{register ? "Crea tu cuenta" : "Qué bueno verte"}</h2>
+        <h2>{t(register ? "auth:register.title" : "auth:login.title")}</h2>
         <p className="muted">
-          {register
-            ? "Elige cómo quieres usar ReservaCR."
-            : "Ingresa para gestionar tus próximas citas."}
+          {t(register ? "auth:register.description" : "auth:login.description")}
         </p>
         {register && (
           <div className="tabs">
@@ -43,17 +45,18 @@ export default function Auth({ register = false }: { register?: boolean }) {
               className={role === "CLIENT" ? "active" : ""}
               onClick={() => setRole("CLIENT")}
             >
-              Quiero reservar
+              {t("auth:register.client")}
             </button>
             <button
               className={role === "BUSINESS" ? "active" : ""}
               onClick={() => setRole("BUSINESS")}
             >
-              Tengo un negocio
+              {t("auth:register.business")}
             </button>
           </div>
         )}
         <form
+          {...validation}
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -82,7 +85,7 @@ export default function Auth({ register = false }: { register?: boolean }) {
         >
           {register && (
             <>
-              <Field label="Nombre completo">
+              <Field label={t("auth:fields.name")}>
                 <input
                   name="name"
                   autoComplete="name"
@@ -91,7 +94,7 @@ export default function Auth({ register = false }: { register?: boolean }) {
                   maxLength={100}
                 />
               </Field>
-              <Field label="Teléfono">
+              <Field label={t("auth:fields.phone")}>
                 <input
                   name="phone"
                   autoComplete="tel"
@@ -101,17 +104,17 @@ export default function Auth({ register = false }: { register?: boolean }) {
               </Field>
             </>
           )}
-          <Field label="Correo electrónico">
+          <Field label={t("auth:fields.email")}>
             <input
               name="email"
               type="email"
               autoComplete="email"
               maxLength={190}
               required
-              placeholder="tu@correo.com"
+              placeholder={t("auth:fields.emailPlaceholder")}
             />
           </Field>
-          <Field label="Contraseña">
+          <Field label={t("auth:fields.password")}>
             <input
               name="password"
               type="password"
@@ -120,21 +123,21 @@ export default function Auth({ register = false }: { register?: boolean }) {
               maxLength={72}
               required
               placeholder={
-                register ? "Al menos 10 caracteres" : "Tu contraseña"
+                register ? t("auth:fields.passwordMinimum", { min: 10 }) : t("auth:fields.passwordPlaceholder")
               }
             />
           </Field>
           <ErrorBox message={error} />
           <button className="button full" disabled={busy}>
-            {busy ? "Un momento…" : register ? "Crear cuenta" : "Ingresar"}
+            {t(busy ? "common:busy" : register ? "auth:register.submit" : "auth:login.submit")}
             <ArrowRight size={18} />
           </button>
         </form>
-        {!register && <p className="auth-link"><Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link></p>}
+        {!register && <p className="auth-link"><Link to="/recuperar-contrasena">{t("auth:login.forgot")}</Link></p>}
         <p className="auth-link">
-          {register ? "¿Ya tienes cuenta?" : "¿Todavía no tienes cuenta?"}{" "}
+          {t(register ? "auth:register.existing" : "auth:login.new")}{" "}
           <Link to={register ? "/ingresar" : "/registro"}>
-            {register ? "Ingresa" : "Regístrate"}
+            {t(register ? "auth:login.link" : "auth:register.link")}
           </Link>
         </p>
       </section>

@@ -1,0 +1,53 @@
+{
+  "language": {
+    "label": "Language"
+  },
+  "loading": "Loading…",
+  "busy": "One moment…",
+  "actions": {
+    "home": "Back to home",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "pagination": "Page {{page}} of {{pages}}",
+  "price": {
+    "ask": "Ask for price"
+  },
+  "business": {
+    "online": "Online bookings",
+    "services": "View services →"
+  },
+  "access": {
+    "denied": "You do not have access to this section",
+    "notFound": "This page does not exist"
+  },
+  "meta": {
+    "title": "ReservaCR · Your time, better booked",
+    "description": "Find local businesses and book your next appointment with ReservaCR."
+  },
+  "status": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "SUSPENDED": "Suspended",
+    "CONFIRMED": "Confirmed",
+    "CANCELLED": "Cancelled",
+    "COMPLETED": "Completed",
+    "NO_SHOW": "No-show",
+    "SENT": "Sent",
+    "FAILED": "Failed",
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive",
+    "SUCCESS": "Successful"
+  },
+  "categories": {
+    "food": "Food",
+    "clothing": "Clothing",
+    "beauty": "Beauty",
+    "barber": "Barbershop",
+    "health": "Health",
+    "wellness": "Wellness",
+    "professional": "Professional services",
+    "other": "Other"
+  }
+}

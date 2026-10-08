@@ -1,0 +1,86 @@
+{
+  "head": {
+    "eyebrow": "ADMINISTRACIÓN",
+    "title": "Un catálogo en buenas manos",
+    "description": "Revisa solicitudes, administra categorías y consulta los movimientos de la plataforma."
+  },
+  "tabs": {
+    "businesses": "Negocios",
+    "categories": "Categorías",
+    "mail": "Correos",
+    "audit": "Actividad"
+  },
+  "businesses": {
+    "title": "Solicitudes y negocios",
+    "empty": "Todavía no hay negocios registrados"
+  },
+  "filters": {
+    "label": "Filtrar por estado",
+    "all": "Todos los estados",
+    "pending": "Pendientes",
+    "approved": "Aprobados",
+    "rejected": "Rechazados",
+    "suspended": "Suspendidos"
+  },
+  "table": {
+    "business": "Negocio",
+    "location": "Ubicación",
+    "status": "Estado",
+    "publication": "Publicación",
+    "action": "Acción",
+    "date": "Fecha",
+    "resource": "Recurso",
+    "detail": "Detalle"
+  },
+  "publication": {
+    "visible": "Publicado",
+    "hidden": "Oculto"
+  },
+  "actions": {
+    "review": "Revisar",
+    "add": "Agregar",
+    "save": "Guardar",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "suspend": "Suspender"
+  },
+  "categories": {
+    "title": "Categorías del catálogo",
+    "new": "Nueva categoría",
+    "placeholder": "Nombre de la nueva categoría",
+    "name": "Nombre de categoría",
+    "active": "Activa",
+    "hint": "Desactivar una categoría impide usarla en nuevos registros. Los negocios existentes conservan su categoría e historial.",
+    "translation": "Categoría traducida ES/EN",
+    "original": "Conservar nombre personalizado"
+  },
+  "mail": {
+    "title": "Estado de notificaciones",
+    "hint": "El fallo de correo no elimina la reserva. Los envíos pendientes se reintentan automáticamente cuando SMTP está configurado.",
+    "attempts_one": "{{count}} intento",
+    "attempts_other": "{{count}} intentos"
+  },
+  "audit": {
+    "title": "Últimos movimientos",
+    "actions": {
+      "BUSINESS_APPROVED": "Negocio aprobado",
+      "BUSINESS_REJECTED": "Negocio rechazado",
+      "BUSINESS_SUSPENDED": "Negocio suspendido",
+      "CATEGORY_CREATE": "Categoría creada",
+      "CATEGORY_UPDATE": "Categoría actualizada",
+      "BOOKING_CONFIRMED": "Reserva confirmada",
+      "BOOKING_CANCELLED": "Reserva cancelada",
+      "BOOKING_COMPLETED": "Reserva completada",
+      "BOOKING_NO_SHOW": "No asistió"
+    }
+  },
+  "review": {
+    "services": "Servicios",
+    "hours": "Horario",
+    "notes": "Observaciones (obligatorias para rechazar o suspender)",
+    "contact": "Teléfono: {{phone}} · {{capacity}} cupos",
+    "duration": "{{minutes}} min"
+  }
+}

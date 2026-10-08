@@ -1,3 +1,4 @@
+import { coded } from "../common/errors";
 import {
   Controller,
   Get,
@@ -57,7 +58,7 @@ export class NotificationsController {
       );
     if (!r.affected)
       throw new NotFoundException(
-        "No hay un envío fallido con ese identificador.",
+        coded("NOTIFICATION_FAILED_JOB_NOT_FOUND", "No hay un envío fallido con ese identificador."),
       );
     return { ok: true };
   }

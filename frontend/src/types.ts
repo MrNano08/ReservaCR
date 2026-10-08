@@ -5,16 +5,20 @@ export interface User {
   email: string;
   phone: string;
   role: Role;
+  language?: "es" | "en";
 }
 export interface Category {
   id: string;
   name: string;
+  code?: string | null;
   active: boolean;
 }
 export interface Service {
   id: string;
   name: string;
+  nameEn?: string | null;
   description: string;
+  descriptionEn?: string | null;
   duration: number;
   price: number | null;
   active: boolean;
@@ -36,6 +40,7 @@ export interface Business {
   id: string;
   name: string;
   description: string;
+  descriptionEn?: string | null;
   province: string;
   canton: string;
   address: string;
@@ -56,6 +61,7 @@ export interface Booking {
   id: string;
   code: string;
   serviceName: string;
+  serviceNameEn?: string | null;
   startAt: string;
   endAt: string;
   status: string;

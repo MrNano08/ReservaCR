@@ -1,13 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  Logger,
-} from "@nestjs/common";
+import { Errors } from "./common/errors";
 import { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -15,29 +9,6 @@ import { resolve } from "node:path";
 import { config } from "./common/config";
 import { db } from "./database/data-source";
 import { AppModule } from "./app.module";
-@Catch()
-class Errors implements ExceptionFilter {
-  catch(e: any, host: ArgumentsHost) {
-    const res = host.switchToHttp().getResponse<Response>();
-    const code =
-      e instanceof HttpException
-        ? e.getStatus()
-        : e.code === "ER_DUP_ENTRY"
-          ? 409
-          : 500;
-    const detail = e instanceof HttpException ? e.getResponse() : null;
-    const message =
-      typeof detail === "string" ? detail : (detail as any)?.message;
-    if (code === 500) Logger.error(e.stack, "API");
-    res.status(code).json({
-      statusCode: code,
-      message:
-        code === 500
-          ? "No se pudo completar la operación. Inténtalo de nuevo."
-          : message || "Ya existe un registro con esos datos.",
-    });
-  }
-}
 export async function bootstrap() {
   await db.initialize();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -53,7 +24,7 @@ export async function bootstrap() {
     )
       return res
         .status(403)
-        .json({ message: "Origen de solicitud no autorizado." });
+        .json({ statusCode: 403, code: "AUTH_FORBIDDEN", message: "Origen de solicitud no autorizado." });
     next();
   });
   app.useStaticAssets(resolve(config.UPLOAD_DIR), {

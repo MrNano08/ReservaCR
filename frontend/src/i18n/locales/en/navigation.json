@@ -1,0 +1,21 @@
+{
+  "menu": {
+    "open": "Open menu",
+    "close": "Close menu"
+  },
+  "explore": "Explore",
+  "bookings": "My bookings",
+  "business": "My business",
+  "schedule": "Schedule",
+  "admin": "Administration",
+  "addBusiness": "Add my business",
+  "theme": "Switch theme",
+  "accessibility": "Open accessibility menu",
+  "notifications": "Notifications",
+  "logout": "Sign out",
+  "login": "Sign in",
+  "footer": {
+    "tagline": "Your time, better booked.",
+    "description": "Made to connect businesses in Costa Rica."
+  }
+}

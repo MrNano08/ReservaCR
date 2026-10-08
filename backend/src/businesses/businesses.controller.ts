@@ -1,3 +1,4 @@
+import { coded } from "../common/errors";
 import {
   Body,
   Controller,
@@ -13,6 +14,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { z } from "zod";
@@ -26,10 +28,19 @@ import { parse, id, idSchema, text } from "../common/validation";
 import { config } from "../common/config";
 import { db } from "../database/data-source";
 import { Business, Category, AuditLog } from "../database/entities";
+function categoryConflict(error: unknown): never {
+  if (typeof error === "object" && error !== null && "code" in error && error.code === "ER_DUP_ENTRY")
+    throw new ConflictException(coded("ADMIN_CATEGORY_EXISTS", "Ya existe un registro con esos datos."));
+  throw error;
+}
+const categoryCode = z.enum([
+  "food", "clothing", "beauty", "barber", "health", "wellness", "professional", "other",
+]).nullable().optional();
 const profile = z
   .object({
     name: text(120, 2),
     description: text(2500, 10),
+    descriptionEn: text(2500, 0).nullable().optional(),
     categoryId: idSchema,
     province: z.enum([
       "Guanacaste",
@@ -50,7 +61,9 @@ const profile = z
 const service = z
   .object({
     name: text(100, 2),
+    nameEn: text(100, 0).nullable().optional(),
     description: text(500, 0).default(""),
+    descriptionEn: text(500, 0).nullable().optional(),
     duration: z.number().int().min(30).max(480).multipleOf(30),
     price: z.number().int().min(0).max(10000000).nullable(),
     active: z.boolean().default(true),
@@ -189,7 +202,7 @@ export class BusinessesController {
       !["image/jpeg", "image/png", "image/webp"].includes(file.mimetype)
     )
       throw new BadRequestException(
-        "Selecciona una imagen JPG, PNG o WebP de hasta 5 MB.",
+        coded("OWNER_INVALID_IMAGE_TYPE", "Selecciona una imagen JPG, PNG o WebP de hasta 5 MB."),
       );
     let data: Buffer;
     try {
@@ -199,7 +212,7 @@ export class BusinessesController {
         .webp({ quality: 85 })
         .toBuffer();
     } catch {
-      throw new BadRequestException("El archivo no es una imagen válida.");
+      throw new BadRequestException(coded("OWNER_INVALID_IMAGE_TYPE", "El archivo no es una imagen válida."));
     }
     const name = `${randomUUID()}.webp`;
     await mkdir(config.UPLOAD_DIR, { recursive: true });
@@ -248,7 +261,7 @@ export class BusinessesController {
   @UseGuards(AuthGuard)
   @Roles("ADMIN")
   async createCategory(@Req() req: AuthRequest, @Body() body: unknown) {
-    const data = parse(z.object({ name: text(80, 2) }).strict(), body);
+    const data = parse(z.object({ name: text(80, 2), code: categoryCode }).strict(), body);
     return db.transaction(async (m) => {
       const c = await m.save(Category, data);
       await m.save(AuditLog, {
@@ -258,7 +271,7 @@ export class BusinessesController {
         detail: c.name,
       });
       return c;
-    });
+    }).catch(categoryConflict);
   }
   @Patch("admin/categories/:id")
   @UseGuards(AuthGuard)
@@ -269,7 +282,7 @@ export class BusinessesController {
     @Body() body: unknown,
   ) {
     const data = parse(
-      z.object({ name: text(80, 2), active: z.boolean() }).strict(),
+      z.object({ name: text(80, 2), active: z.boolean(), code: categoryCode }).strict(),
       body,
     );
     return db.transaction(async (m) => {
@@ -281,7 +294,7 @@ export class BusinessesController {
         detail: data.name,
       });
       return { ok: true };
-    });
+    }).catch(categoryConflict);
   }
   @Get("admin/audit") @UseGuards(AuthGuard) @Roles("ADMIN") audit() {
     return db

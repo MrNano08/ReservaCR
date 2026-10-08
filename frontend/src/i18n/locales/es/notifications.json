@@ -1,0 +1,10 @@
+{
+  "eyebrow": "AL DÍA",
+  "title": "Tus notificaciones",
+  "description": "Confirmaciones y cambios de tus citas, siempre a mano.",
+  "read": "Marcar leída",
+  "empty": {
+    "title": "Todo tranquilo por aquí",
+    "description": "Tus notificaciones aparecerán cuando reserves una cita."
+  }
+}

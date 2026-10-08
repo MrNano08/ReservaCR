@@ -1,12 +1,15 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, FormEvent } from "react";
 import { Plus, Trash2, Save, Upload, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLoad } from "../hooks/useLoad";
 import { Business, Category, Hour, Service } from "../types";
 import { api, send, ApiError } from "../services/api";
+import { bilingualText, categoryLabel } from "../i18n/content";
 import { PageHead, Field, ErrorBox, Loading, Badge } from "../components/UI";
 import {
   weekdays,
+  weekdayName,
   minuteTime,
   money,
   provinces,
@@ -15,6 +18,7 @@ import {
 const blank = {
   name: "",
   description: "",
+  descriptionEn: "",
   province: "Guanacaste",
   canton: "",
   address: "",
@@ -24,6 +28,7 @@ const blank = {
   cancellationMinutes: 120,
 };
 export default function Owner() {
+  const { t } = useTranslation("owner");
   const categories = useLoad<Category[]>("/categories");
   const [b, setB] = useState<Business | null>(null),
     [profile, setProfile] = useState(blank),
@@ -40,7 +45,7 @@ export default function Owner() {
       setB(data);
       setProfile(
         Object.fromEntries(
-          Object.keys(blank).map((k) => [k, data[k as keyof Business]]),
+          Object.keys(blank).map((k) => [k, data[k as keyof Business] ?? blank[k as keyof typeof blank]]),
         ) as typeof blank,
       );
       setHours(
@@ -81,18 +86,17 @@ export default function Owner() {
   return (
     <>
       <PageHead
-        eyebrow="ESPACIO DEL NEGOCIO"
-        title={b ? b.name : "Dale un lugar a tu negocio"}
+        eyebrow={t("owner:head.eyebrow")}
+        title={b ? b.name : t("owner:head.title")}
       >
-        Configura tu perfil, tus servicios y los horarios que tus clientes
-        podrán reservar.
+        {t("owner:head.description")}
       </PageHead>
       {b && (
         <div className="owner-status panel">
           <div className="row">
             <Badge value={b.status} />
             <span>
-              {b.published ? "Visible en el catálogo" : "Sin publicar"}
+              {b.published ? t("owner:status.visible") : t("owner:status.hidden")}
             </span>
           </div>
           <div className="row">
@@ -102,11 +106,11 @@ export default function Owner() {
                 onClick={() =>
                   action(
                     () => api("/owner/resubmit", send("POST")),
-                    "Solicitud enviada a revisión.",
+                    "owner:notice.review",
                   )
                 }
               >
-                Solicitar otra revisión
+                {t("owner:actions.review")}
               </button>
             )}
             <button
@@ -119,33 +123,33 @@ export default function Owner() {
                       "/owner/publish",
                       send("PATCH", { published: !b.published }),
                     ),
-                  b.published ? "Negocio oculto." : "Negocio publicado.",
+                  b.published ? "owner:notice.hidden" : "owner:notice.published",
                 )
               }
             >
-              {b.published ? "Ocultar negocio" : "Publicar negocio"}
+              {b.published ? t("owner:actions.hide") : t("owner:actions.publish")}
             </button>
             {b.published && (
               <Link
                 to={`/negocios/${b.id}`}
                 className="icon-button"
-                aria-label="Ver perfil público"
+                aria-label={t("owner:actions.publicProfile")}
               >
                 <ExternalLink size={19} />
               </Link>
             )}
           </div>
           {b.reviewNote && (
-            <p className="review-note">Revisión: {b.reviewNote}</p>
+            <p className="review-note">{t("owner:reviewNote", { note: b.reviewNote })}</p>
           )}
         </div>
       )}
       <div className="tabs owner-tabs">
         {[
-          ["profile", "Perfil"],
-          ["services", "Servicios"],
-          ["hours", "Horarios y cupos"],
-          ["blocks", "Bloqueos"],
+          ["profile", t("owner:tabs.profile")],
+          ["services", t("owner:tabs.services")],
+          ["hours", t("owner:tabs.hours")],
+          ["blocks", t("owner:tabs.blocks")],
         ].map(([v, l]) => (
           <button
             disabled={!b && v !== "profile"}
@@ -164,7 +168,7 @@ export default function Owner() {
       <ErrorBox message={error || categories.error} />
       {notice && (
         <div className="alert success" role="status">
-          {notice}
+          {t(notice)}
         </div>
       )}
       {tab === "profile" && (
@@ -174,13 +178,13 @@ export default function Owner() {
             e.preventDefault();
             void action(
               () => api("/owner/business", send("PUT", profile)),
-              "Perfil guardado.",
+              "owner:notice.profile",
             );
           }}
         >
-          <h2>La primera impresión cuenta</h2>
+          <h2>{t("owner:profile.title")}</h2>
           <div className="form-grid">
-            <Field label="Nombre del negocio">
+            <Field label={t("owner:profile.name")}>
               <input
                 required
                 minLength={2}
@@ -189,21 +193,21 @@ export default function Owner() {
                 onChange={(e) => field("name", e.target.value)}
               />
             </Field>
-            <Field label="Categoría">
+            <Field label={t("owner:profile.category")}>
               <select
                 required
                 value={profile.categoryId}
                 onChange={(e) => field("categoryId", e.target.value)}
               >
-                <option value="">Selecciona una categoría</option>
+                <option value="">{t("owner:profile.chooseCategory")}</option>
                 {categories.data?.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {categoryLabel(c)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Provincia">
+            <Field label={t("owner:profile.province")}>
               <select
                 value={profile.province}
                 onChange={(e) => field("province", e.target.value)}
@@ -213,7 +217,7 @@ export default function Owner() {
                 ))}
               </select>
             </Field>
-            <Field label="Cantón">
+            <Field label={t("owner:profile.canton")}>
               <input
                 required
                 minLength={2}
@@ -222,7 +226,7 @@ export default function Owner() {
                 onChange={(e) => field("canton", e.target.value)}
               />
             </Field>
-            <Field label="Dirección exacta">
+            <Field label={t("owner:profile.address")}>
               <input
                 required
                 minLength={5}
@@ -231,7 +235,7 @@ export default function Owner() {
                 onChange={(e) => field("address", e.target.value)}
               />
             </Field>
-            <Field label="Teléfono de contacto">
+            <Field label={t("owner:profile.phone")}>
               <input
                 type="tel"
                 required
@@ -242,7 +246,7 @@ export default function Owner() {
               />
             </Field>
           </div>
-          <Field label="Cuéntales sobre tu negocio">
+          <Field label={t("owner:profile.description")}>
             <textarea
               required
               minLength={10}
@@ -251,20 +255,23 @@ export default function Owner() {
               onChange={(e) => field("description", e.target.value)}
             />
           </Field>
+          <Field label={t("owner:profile.descriptionEn")}>
+            <textarea maxLength={2500} value={profile.descriptionEn}
+              onChange={(e) => field("descriptionEn", e.target.value)} />
+          </Field>
           <button className="button" disabled={busy}>
             <Save size={17} />
-            {busy ? "Guardando…" : "Guardar perfil"}
+            {busy ? t("owner:actions.saving") : t("owner:profile.save")}
           </button>
           {!b && (
             <p className="hint">
-              Tu negocio se enviará a revisión. Después de su aprobación podrás
-              publicarlo con servicios y horarios.
+              {t("owner:profile.reviewHint")}
             </p>
           )}
           {b && (
             <div className="upload-area">
               <Upload size={24} />
-              <Field label="Imagen del negocio (JPG, PNG o WebP, máximo 5 MB)">
+              <Field label={t("owner:profile.image")}>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -273,20 +280,20 @@ export default function Owner() {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     if (file.size > 5 * 1024 * 1024) {
-                      setError("La imagen supera los 5 MB.");
+                      setError("owner:errors.imageSize");
                       return;
                     }
                     const fd = new FormData();
                     fd.set("image", file);
                     void action(
                       () => api("/owner/image", { method: "POST", body: fd }),
-                      "Imagen actualizada.",
+                      "owner:notice.image",
                     );
                   }}
                 />
               </Field>
               {b.imageUrl && (
-                <img src={b.imageUrl} alt="Imagen actual del negocio" />
+                <img src={b.imageUrl} alt={t("owner:profile.imageAlt")} />
               )}
             </div>
           )}
@@ -295,14 +302,16 @@ export default function Owner() {
       {tab === "services" && (
         <section className="panel">
           <div className="section-title">
-            <h2>Tus servicios</h2>
+            <h2>{t("owner:services.title")}</h2>
             <button
               className="button small"
               disabled={busy}
               onClick={() =>
                 setService({
                   name: "",
+                  nameEn: "",
                   description: "",
+                  descriptionEn: "",
                   duration: 30,
                   price: null,
                   active: true,
@@ -310,27 +319,27 @@ export default function Owner() {
               }
             >
               <Plus size={17} />
-              Agregar servicio
+              {t("owner:services.add")}
             </button>
           </div>
           {b?.services.map((s) => (
             <div className="management-row" key={s.id}>
               <div>
                 <h3>
-                  {s.name} {!s.active && <small>(Inactivo)</small>}
+                  {bilingualText(s.name, s.nameEn)} {!s.active && <small>{t("owner:services.inactive")}</small>}
                 </h3>
                 <p>
-                  {s.duration} min · {money(s.price)}
+                  {t("owner:duration", { minutes: s.duration })} · {money(s.price)}
                 </p>
               </div>
               <button disabled={busy} onClick={() => setService(s)}>
-                Editar
+                {t("owner:actions.edit")}
               </button>
             </div>
           ))}
           {!b?.services.length && (
             <p className="hint">
-              Agrega tu primer servicio para poder publicar el negocio.
+              {t("owner:services.empty")}
             </p>
           )}
           {service && (
@@ -338,26 +347,28 @@ export default function Owner() {
               className="editor"
               onSubmit={(e) => {
                 e.preventDefault();
-                const { id, name, description, duration, price, active } =
+                const { id, name, nameEn, description, descriptionEn, duration, price, active } =
                   service;
                 void action(async () => {
                   await api(
                     id ? `/owner/services/${id}` : "/owner/services",
                     send(id ? "PUT" : "POST", {
                       name,
+                      nameEn,
                       description,
+                      descriptionEn,
                       duration,
                       price,
                       active,
                     }),
                   );
                   setService(null);
-                }, "Servicio guardado.");
+                }, "owner:notice.service");
               }}
             >
-              <h3>{service.id ? "Editar servicio" : "Nuevo servicio"}</h3>
+              <h3>{service.id ? t("owner:services.edit") : t("owner:services.new")}</h3>
               <div className="form-grid">
-                <Field label="Nombre">
+                <Field label={t("owner:services.name")}>
                   <input
                     required
                     minLength={2}
@@ -368,7 +379,7 @@ export default function Owner() {
                     }
                   />
                 </Field>
-                <Field label="Duración (minutos, múltiplos de 30)">
+                <Field label={t("owner:services.duration")}>
                   <input
                     type="number"
                     min={30}
@@ -384,7 +395,7 @@ export default function Owner() {
                     }
                   />
                 </Field>
-                <Field label="Precio en colones (vacío: consultar)">
+                <Field label={t("owner:services.price")}>
                   <input
                     type="number"
                     min={0}
@@ -400,7 +411,7 @@ export default function Owner() {
                     }
                   />
                 </Field>
-                <Field label="Estado">
+                <Field label={t("owner:services.status")}>
                   <select
                     value={String(service.active)}
                     onChange={(e) =>
@@ -410,12 +421,16 @@ export default function Owner() {
                       })
                     }
                   >
-                    <option value="true">Activo</option>
-                    <option value="false">Inactivo</option>
+                    <option value="true">{t("owner:services.active")}</option>
+                    <option value="false">{t("owner:services.inactiveOption")}</option>
                   </select>
                 </Field>
               </div>
-              <Field label="Descripción">
+              <Field label={t("owner:services.nameEn")}>
+                <input maxLength={100} value={service.nameEn ?? ""}
+                  onChange={(e) => setService({ ...service, nameEn: e.target.value })} />
+              </Field>
+              <Field label={t("owner:services.description")}>
                 <textarea
                   maxLength={500}
                   value={service.description}
@@ -424,12 +439,16 @@ export default function Owner() {
                   }
                 />
               </Field>
+              <Field label={t("owner:services.descriptionEn")}>
+                <textarea maxLength={500} value={service.descriptionEn ?? ""}
+                  onChange={(e) => setService({ ...service, descriptionEn: e.target.value })} />
+              </Field>
               <div className="row">
                 <button className="button" disabled={busy}>
-                  Guardar servicio
+                  {t("owner:services.save")}
                 </button>
                 <button type="button" onClick={() => setService(null)}>
-                  Cerrar
+                  {t("owner:actions.close")}
                 </button>
               </div>
             </form>
@@ -438,22 +457,21 @@ export default function Owner() {
       )}
       {tab === "hours" && (
         <section className="panel">
-          <h2>Capacidad y disponibilidad</h2>
+          <h2>{t("owner:hours.title")}</h2>
           <p className="hint">
-            Los cupos son compartidos por todos los servicios. Un servicio largo
-            ocupa un cupo en cada intervalo de 30 minutos.
+            {t("owner:hours.capacityHint")}
           </p>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               void action(
                 () => api("/owner/business", send("PUT", profile)),
-                "Cupos y política guardados.",
+                "owner:notice.policy",
               );
             }}
           >
             <div className="form-grid">
-              <Field label="Cupos simultáneos del negocio">
+              <Field label={t("owner:hours.capacity")}>
                 <input
                   type="number"
                   required
@@ -463,7 +481,7 @@ export default function Owner() {
                   onChange={(e) => field("capacity", Number(e.target.value))}
                 />
               </Field>
-              <Field label="Anticipación mínima para cancelar (minutos)">
+              <Field label={t("owner:hours.cancellation")}>
                 <input
                   type="number"
                   required
@@ -476,18 +494,17 @@ export default function Owner() {
                 />
               </Field>
             </div>
-            <button disabled={busy}>Guardar cupos y cancelación</button>
+            <button disabled={busy}>{t("owner:hours.savePolicy")}</button>
           </form>
           <hr />
-          <h3>Horario semanal</h3>
+          <h3>{t("owner:hours.weekly")}</h3>
           <p className="hint">
-            Puedes agregar dos franjas al mismo día para dejar un descanso. No
-            se permiten franjas superpuestas.
+            {t("owner:hours.hint")}
           </p>
           {hours.map((h, i) => (
             <div className="hours-editor" key={i}>
               <select
-                aria-label="Día"
+                aria-label={t("owner:hours.day")}
                 value={h.weekday}
                 onChange={(e) =>
                   setHours(
@@ -497,14 +514,14 @@ export default function Owner() {
                   )
                 }
               >
-                {weekdays.map((d, k) => (
+                {weekdays.map((_, k) => (
                   <option key={k} value={k}>
-                    {d}
+                    {weekdayName(k)}
                   </option>
                 ))}
               </select>
               <select
-                aria-label="Apertura"
+                aria-label={t("owner:hours.open")}
                 value={h.startMinute}
                 onChange={(e) =>
                   setHours(
@@ -522,9 +539,9 @@ export default function Owner() {
                   </option>
                 ))}
               </select>
-              <span>hasta</span>
+              <span>{t("owner:hours.to")}</span>
               <select
-                aria-label="Cierre"
+                aria-label={t("owner:hours.close")}
                 value={h.endMinute}
                 onChange={(e) =>
                   setHours(
@@ -542,7 +559,7 @@ export default function Owner() {
               </select>
               <button
                 className="icon-button danger"
-                aria-label="Quitar franja"
+                aria-label={t("owner:hours.remove")}
                 onClick={() => setHours(hours.filter((_, j) => j !== i))}
               >
                 <Trash2 size={17} />
@@ -560,7 +577,7 @@ export default function Owner() {
               }
             >
               <Plus size={16} />
-              Agregar franja
+              {t("owner:hours.add")}
             </button>
             <button
               className="button"
@@ -568,21 +585,20 @@ export default function Owner() {
               onClick={() =>
                 action(
                   () => api("/owner/hours", send("PUT", hours)),
-                  "Horario actualizado.",
+                  "owner:notice.hours",
                 )
               }
             >
-              Guardar horarios
+              {t("owner:hours.save")}
             </button>
           </div>
         </section>
       )}
       {tab === "blocks" && (
         <section className="panel">
-          <h2>Descansos y cierres excepcionales</h2>
+          <h2>{t("owner:blocks.title")}</h2>
           <p className="hint">
-            No se aceptan bloqueos que se crucen con reservas vigentes. Horas de
-            Costa Rica.
+            {t("owner:blocks.hint")}
           </p>
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -599,11 +615,11 @@ export default function Owner() {
                   }),
                 );
                 form.reset();
-              }, "Bloqueo agregado.");
+              }, "owner:notice.blockAdded");
             }}
           >
             <div className="form-grid">
-              <Field label="Desde">
+              <Field label={t("owner:blocks.from")}>
                 <input
                   name="startAt"
                   type="datetime-local"
@@ -611,7 +627,7 @@ export default function Owner() {
                   required
                 />
               </Field>
-              <Field label="Hasta">
+              <Field label={t("owner:blocks.to")}>
                 <input
                   name="endAt"
                   type="datetime-local"
@@ -620,16 +636,16 @@ export default function Owner() {
                 />
               </Field>
             </div>
-            <Field label="Motivo">
+            <Field label={t("owner:blocks.reason")}>
               <input
                 name="reason"
                 required
                 maxLength={200}
-                placeholder="Feriado, mantenimiento, descanso…"
+                placeholder={t("owner:blocks.placeholder")}
               />
             </Field>
             <button className="button" disabled={busy}>
-              Agregar bloqueo
+              {t("owner:blocks.add")}
             </button>
           </form>
           <hr />
@@ -647,11 +663,11 @@ export default function Owner() {
                 onClick={() =>
                   action(
                     () => api(`/owner/blocks/${x.id}`, send("DELETE")),
-                    "Bloqueo eliminado.",
+                    "owner:notice.blockDeleted",
                   )
                 }
               >
-                Eliminar
+                {t("owner:actions.delete")}
               </button>
             </div>
           ))}

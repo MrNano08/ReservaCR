@@ -4,11 +4,13 @@ z.config(z.locales.es());
 export function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   const result = schema.safeParse(input);
   if (!result.success)
-    throw new BadRequestException(
-      result.error.issues
+    throw new BadRequestException({
+      code: "VALIDATION_ERROR",
+      message: result.error.issues
         .map((x) => `${x.path.join(".")}: ${x.message}`)
         .join("; "),
-    );
+      fieldErrors: result.error.issues.map(x => ({ field: x.path.join("."), message: x.message })),
+    });
   return result.data;
 }
 export const idSchema = z.string().uuid();

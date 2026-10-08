@@ -39,7 +39,10 @@ import { User, Category, Business, Service, OpeningHour } from "./entities";
       "Servicios profesionales",
     ])
       if (!(await m.findOneBy(Category, { name })))
-        await m.save(Category, { name });
+        await m.save(Category, { name, code: ({
+          "Belleza": "beauty", "Barbería": "barber", "Salud": "health",
+          "Bienestar": "wellness", "Servicios profesionales": "professional",
+        } as Record<string, string>)[name] });
     const examples = [
       [
         "negocio@reservacr.test",

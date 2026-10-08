@@ -1,0 +1,42 @@
+{
+  "actions": {
+    "back": "Volver a explorar"
+  },
+  "timeZone": "Hora de Costa Rica",
+  "services": {
+    "title": "Encuentra tu servicio"
+  },
+  "hours": {
+    "title": "Horario de atención",
+    "closed": "Cerrado"
+  },
+  "booking": {
+    "eyebrow": "HAZ UN ESPACIO PARA TI",
+    "title": "Reserva tu cita",
+    "service": "Selecciona un servicio",
+    "moment": "Encuentra tu momento",
+    "date": "Fecha de la cita",
+    "choose": "Elige un servicio para consultar horarios disponibles.",
+    "notes": "Nota para el negocio (opcional)",
+    "notesPlaceholder": "¿Algo que debamos saber?",
+    "price": "Precio del servicio",
+    "login": "Inicia sesión para reservar",
+    "client": "Las reservas se realizan desde una cuenta de cliente.",
+    "busy": "Confirmando…",
+    "confirm": "Confirmar reserva",
+    "policy": "Cancelación hasta {{minutes}} minutos antes de la cita. El pago, si corresponde, se coordina con el negocio."
+  },
+  "success": {
+    "title": "Tu cita está confirmada",
+    "description": "La encontrarás en tus reservas. La notificación por correo se procesará por separado.",
+    "link": "Ver mis reservas"
+  },
+  "empty": {
+    "title": "Sin horarios disponibles",
+    "description": "Prueba con otra fecha."
+  },
+  "duration_one": "{{count}} minuto",
+  "duration_other": "{{count}} minutos",
+  "capacity_one": "{{count}} cupo",
+  "capacity_other": "{{count}} cupos"
+}

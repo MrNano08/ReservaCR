@@ -1,3 +1,4 @@
+import { coded } from "../common/errors";
 import {
   CanActivate,
   ExecutionContext,
@@ -23,14 +24,14 @@ export class AuthGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext) {
     const req = ctx.switchToHttp().getRequest<AuthRequest>();
     const user = await this.auth.resolve(req.cookies?.reservacr_session);
-    if (!user) throw new UnauthorizedException("Inicia sesión para continuar.");
+    if (!user) throw new UnauthorizedException(coded("AUTH_UNAUTHORIZED", "Inicia sesión para continuar."));
     req.user = user;
     const roles = this.reflector.getAllAndOverride<Role[]>("roles", [
       ctx.getHandler(),
       ctx.getClass(),
     ]);
     if (roles && !roles.includes(user.role))
-      throw new ForbiddenException("No tienes permiso para esta acción.");
+      throw new ForbiddenException(coded("AUTH_FORBIDDEN", "No tienes permiso para esta acción."));
     return true;
   }
 }

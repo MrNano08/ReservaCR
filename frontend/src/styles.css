@@ -194,6 +194,12 @@ nav a.active {
   align-items: center;
   gap: 12px;
 }
+.language-selector {
+  width: auto;
+  min-width: 0;
+  padding: 6px;
+  font-size: 12px;
+}
 .button {
   background: var(--accent);
   border: 1px solid var(--accent);
@@ -1690,4 +1696,45 @@ table h3 {
     grid-column: 3;
     grid-row: 2;
   }
+}
+/* Let the language selector wrap with the existing mobile header. */
+@media (max-width: 450px) {
+  .nav-wrap {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 86px;
+    row-gap: 8px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .nav-actions { flex-wrap: wrap; }
+  .header nav { top: 100%; }
+}
+
+.userway-trigger {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid #bfdbfe;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 16px #0006;
+  cursor: pointer;
+}
+.userway-trigger:hover { background: #1d4ed8; }
+.userway-trigger:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
+}
+/* Keep application controls out of the floating button's rail; dialogs stay above it. */
+body:has(.userway-trigger) main,
+body:has(.userway-trigger) footer {
+  padding-right: max(72px, calc(env(safe-area-inset-right) + 60px));
 }

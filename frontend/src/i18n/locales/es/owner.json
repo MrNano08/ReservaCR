@@ -1,0 +1,103 @@
+{
+  "head": {
+    "eyebrow": "ESPACIO DEL NEGOCIO",
+    "title": "Dale un lugar a tu negocio",
+    "description": "Configura tu perfil, tus servicios y los horarios que tus clientes podrán reservar."
+  },
+  "status": {
+    "visible": "Visible en el catálogo",
+    "hidden": "Sin publicar"
+  },
+  "actions": {
+    "review": "Solicitar otra revisión",
+    "hide": "Ocultar negocio",
+    "publish": "Publicar negocio",
+    "publicProfile": "Ver perfil público",
+    "saving": "Guardando…",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "delete": "Eliminar"
+  },
+  "tabs": {
+    "profile": "Perfil",
+    "services": "Servicios",
+    "hours": "Horarios y cupos",
+    "blocks": "Bloqueos"
+  },
+  "profile": {
+    "title": "La primera impresión cuenta",
+    "name": "Nombre del negocio",
+    "category": "Categoría",
+    "chooseCategory": "Selecciona una categoría",
+    "province": "Provincia",
+    "canton": "Cantón",
+    "address": "Dirección exacta",
+    "phone": "Teléfono de contacto",
+    "description": "Descripción en español",
+    "save": "Guardar perfil",
+    "reviewHint": "Tu negocio se enviará a revisión. Después de su aprobación podrás publicarlo con servicios y horarios.",
+    "image": "Imagen del negocio (JPG, PNG o WebP, máximo 5 MB)",
+    "imageAlt": "Imagen actual del negocio",
+    "descriptionEn": "Descripción en inglés (opcional)"
+  },
+  "errors": {
+    "imageSize": "La imagen supera los 5 MB."
+  },
+  "services": {
+    "title": "Tus servicios",
+    "add": "Agregar servicio",
+    "inactive": "(Inactivo)",
+    "empty": "Agrega tu primer servicio para poder publicar el negocio.",
+    "edit": "Editar servicio",
+    "new": "Nuevo servicio",
+    "name": "Nombre del servicio en español",
+    "duration": "Duración (minutos, múltiplos de 30)",
+    "price": "Precio en colones (vacío: consultar)",
+    "status": "Estado",
+    "active": "Activo",
+    "inactiveOption": "Inactivo",
+    "description": "Descripción en español",
+    "save": "Guardar servicio",
+    "nameEn": "Nombre del servicio en inglés (opcional)",
+    "descriptionEn": "Descripción en inglés (opcional)"
+  },
+  "hours": {
+    "title": "Capacidad y disponibilidad",
+    "capacityHint": "Los cupos son compartidos por todos los servicios. Un servicio largo ocupa un cupo en cada intervalo de 30 minutos.",
+    "capacity": "Cupos simultáneos del negocio",
+    "cancellation": "Anticipación mínima para cancelar (minutos)",
+    "savePolicy": "Guardar cupos y cancelación",
+    "weekly": "Horario semanal",
+    "hint": "Puedes agregar dos franjas al mismo día para dejar un descanso. No se permiten franjas superpuestas.",
+    "day": "Día",
+    "open": "Apertura",
+    "to": "hasta",
+    "close": "Cierre",
+    "remove": "Quitar franja",
+    "add": "Agregar franja",
+    "save": "Guardar horarios"
+  },
+  "blocks": {
+    "title": "Descansos y cierres excepcionales",
+    "hint": "No se aceptan bloqueos que se crucen con reservas vigentes. Horas de Costa Rica.",
+    "from": "Desde",
+    "to": "Hasta",
+    "reason": "Motivo",
+    "placeholder": "Feriado, mantenimiento, descanso…",
+    "add": "Agregar bloqueo"
+  },
+  "notice": {
+    "review": "Solicitud enviada a revisión.",
+    "hidden": "Negocio oculto.",
+    "published": "Negocio publicado.",
+    "profile": "Perfil guardado.",
+    "image": "Imagen actualizada.",
+    "service": "Servicio guardado.",
+    "policy": "Cupos y política guardados.",
+    "hours": "Horario actualizado.",
+    "blockAdded": "Bloqueo agregado.",
+    "blockDeleted": "Bloqueo eliminado."
+  },
+  "reviewNote": "Revisión: {{note}}",
+  "duration": "{{minutes}} min"
+}

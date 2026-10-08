@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { In } from "typeorm";
 import { db } from "../src/database/data-source";
 import {
   User,
@@ -11,6 +12,10 @@ import {
   OpeningHour,
   Booking,
   Notification,
+  Block,
+  AuditLog,
+  Session,
+  PasswordReset,
 } from "../src/database/entities";
 import { BookingsService } from "../src/bookings/bookings.service";
 import { BusinessesService } from "../src/businesses/businesses.service";
@@ -23,14 +28,14 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
     config.DB_DATABASE.endsWith("_test"),
     "Usa una BD aislada cuyo nombre termine en _test.",
   );
+  assert.ok(!config.SMTP_HOST, "Esta suite verifica SMTP ausente: usa una copia QA sin SMTP_HOST. La captura SMTP se valida por separado.");
   await db.initialize();
-  await db.runMigrations({ transaction: "none" });
-  const ids: string[] = [];
+  const ids: string[] = [], businessIds: string[] = [], categoryIds: string[] = [];
   const services = new BookingsService(),
     businesses = new BusinessesService();
   const user = async (role: User["role"]) => {
     const u = await db.getRepository(User).save({
-      name: "Prueba",
+      name: "QA_I18N_Prueba",
       email: `${randomUUID()}@example.test`,
       role,
       passwordHash: "not-login",
@@ -38,15 +43,20 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
     ids.push(u.id);
     return u;
   };
-  const [c1, c2, owner1, owner2] = await Promise.all([
-    user("CLIENT"),
-    user("CLIENT"),
-    user("BUSINESS"),
-    user("BUSINESS"),
-  ]);
+  try {
+  // The database must already be migrated. This suite never performs DDL.
+  const runner = db.createQueryRunner();
+  try {
+    assert.ok(await runner.hasColumn("users", "language"), "Aplica las migraciones revisadas en la DB QA antes de esta suite.");
+  } finally { await runner.release(); }
+  const c1 = await user("CLIENT"), c2 = await user("CLIENT");
+  const owner1 = await user("BUSINESS"), owner2 = await user("BUSINESS");
+  await db.getRepository(User).update(c1.id, { language: "en" });
+  c1.language = "en";
   const category = await db
     .getRepository(Category)
-    .save({ name: `Test ${randomUUID()}` });
+    .save({ name: `QA_I18N_${randomUUID()}` });
+  categoryIds.push(category.id);
   const makeBusiness = async (owner: User) => {
     const b = await db.getRepository(Business).save({
       ownerId: owner.id,
@@ -62,6 +72,7 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
       capacity: 1,
       cancellationMinutes: 120,
     });
+    businessIds.push(b.id);
     for (let weekday = 0; weekday < 7; weekday++)
       await db
         .getRepository(OpeningHour)
@@ -71,10 +82,7 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
       .save({ businessId: b.id, name: "Consulta", duration: 60, price: 5000 });
     return { b, s };
   };
-  const [a, b] = await Promise.all([
-    makeBusiness(owner1),
-    makeBusiness(owner2),
-  ]);
+  const a = await makeBusiness(owner1), b = await makeBusiness(owner2);
   const day = dateInCR(new Date(Date.now() + 3 * 86400000));
   const at = (min: number) => localInstant(day, min).toISOString();
   const payload = (serviceId: string, min: number) => ({
@@ -83,7 +91,6 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
     notes: "",
     idempotencyKey: randomUUID(),
   });
-  try {
     await t.test(
       "último cupo: exactamente una de dos confirmaciones simultáneas",
       async () => {
@@ -159,7 +166,13 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
           .createQueryBuilder("n")
           .where("n.subject LIKE :text", { text: `%cancelada%${r.code}%` })
           .getCount();
-        assert.equal(jobs, 2);
+        // Client is EN, owner is ES; preserve independently localized final text.
+        const localizedJobs = await db.getRepository(Notification).findBy({ userId: In([c1.id, owner1.id]) });
+        const cancellation = localizedJobs.filter(j => j.subject.endsWith(r.code) && (j.subject.includes("cancelled") || j.subject.includes("cancelada")));
+        assert.equal(cancellation.length, 2);
+        assert.ok(cancellation.find(j => j.userId === c1.id)?.subject.startsWith("Booking cancelled"));
+        assert.ok(cancellation.find(j => j.userId === owner1.id)?.subject.startsWith("Reserva cancelada"));
+        assert.equal(jobs, 1);
         const replacement = await services.create(c2, payload(a.s.id, 900));
         assert.equal(replacement.status, "CONFIRMED");
       },
@@ -245,7 +258,7 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
         const auth = new AuthService();
         const mail = `${randomUUID()}@example.test`;
         const result = await auth.register({
-          name: "Cuenta",
+          name: "QA_I18N_Cuenta",
           email: mail,
           password: "Test-reservacr-2026",
           phone: "",
@@ -268,6 +281,29 @@ test("MariaDB: flujo, cupos, concurrencia, permisos, cancelación y cola", async
       },
     );
   } finally {
-    await db.destroy();
+    // Only delete resources belonging to IDs returned in this run; never by name.
+    console.info("QA_I18N IDs de esta ejecución", { userIds: ids, businessIds, categoryIds });
+    try {
+      await db.transaction(async m => {
+        if (ids.length) {
+          await m.delete(Notification, { userId: In(ids) });
+          await m.delete(AuditLog, { actorId: In(ids) });
+          await m.delete(Session, { userId: In(ids) });
+          await m.delete(PasswordReset, { userId: In(ids) });
+        }
+        if (businessIds.length) {
+          await m.delete(Booking, { businessId: In(businessIds) });
+          await m.delete(Block, { businessId: In(businessIds) });
+          await m.delete(OpeningHour, { businessId: In(businessIds) });
+          await m.delete(Service, { businessId: In(businessIds) });
+          await m.delete(Business, { id: In(businessIds) });
+        }
+        if (categoryIds.length) await m.delete(Category, { id: In(categoryIds) });
+        if (ids.length) await m.delete(User, { id: In(ids) });
+      });
+    } catch (error) {
+      console.error("Cleanup QA_I18N pendiente", { userIds: ids, businessIds, categoryIds });
+      throw error;
+    } finally { await db.destroy(); }
   }
 });

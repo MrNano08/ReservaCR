@@ -1,9 +1,12 @@
+import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { CalendarDays, Sun, Moon, LogOut, Bell, Menu, X } from "lucide-react";
+import { CalendarDays, Sun, Moon, LogOut, Bell, Menu, X, Accessibility } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { LanguageSelector } from "./LanguageSelector";
 import { ErrorBox } from "./UI";
 export default function Layout() {
+  const { t } = useTranslation();
   const { user, logout, error } = useAuth();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false),
@@ -28,36 +31,37 @@ export default function Layout() {
           </Link>
           <button
             className="icon-button mobile-menu"
-            aria-label="Abrir menú"
+            aria-label={t(menu ? "navigation:menu.close" : "navigation:menu.open")} aria-expanded={menu}
             onClick={() => setMenu(!menu)}
           >
             {menu ? <X /> : <Menu />}
           </button>
           <nav className={menu ? "open" : ""} onClick={() => setMenu(false)}>
             <NavLink to="/" end>
-              Explorar
+              {t("navigation:explore")}
             </NavLink>
             {user?.role === "CLIENT" && (
-              <NavLink to="/reservas">Mis reservas</NavLink>
+              <NavLink to="/reservas">{t("navigation:bookings")}</NavLink>
             )}
             {user?.role === "BUSINESS" && (
               <>
-                <NavLink to="/negocio">Mi negocio</NavLink>
-                <NavLink to="/reservas">Agenda</NavLink>
+                <NavLink to="/negocio">{t("navigation:business")}</NavLink>
+                <NavLink to="/reservas">{t("navigation:schedule")}</NavLink>
               </>
             )}
             {user?.role === "ADMIN" && (
-              <NavLink to="/admin">Administración</NavLink>
+              <NavLink to="/admin">{t("navigation:admin")}</NavLink>
             )}
             {!user && (
-              <Link to="/registro?rol=negocio">Agregar mi negocio</Link>
+              <Link to="/registro?rol=negocio">{t("navigation:addBusiness")}</Link>
             )}
           </nav>
           <div className="nav-actions">
+            <LanguageSelector />
             <button
               className="icon-button"
               onClick={theme}
-              aria-label="Cambiar tema"
+              aria-label={t("navigation:theme")}
             >
               {light ? <Moon size={19} /> : <Sun size={19} />}
             </button>
@@ -66,7 +70,7 @@ export default function Layout() {
                 <Link
                   className="icon-button"
                   to="/notificaciones"
-                  aria-label="Notificaciones"
+                  aria-label={t("navigation:notifications")}
                 >
                   <Bell size={19} />
                 </Link>
@@ -75,7 +79,7 @@ export default function Layout() {
                 </span>
                 <button
                   className="icon-button"
-                  aria-label="Cerrar sesión"
+                  aria-label={t("navigation:logout")}
                   onClick={async () => {
                     try {
                       await logout();
@@ -90,7 +94,7 @@ export default function Layout() {
               </>
             ) : (
               <Link className="button small" to="/ingresar">
-                Ingresar <span>↗</span>
+                {t("navigation:login")}<span>↗</span>
               </Link>
             )}
           </div>
@@ -104,9 +108,21 @@ export default function Layout() {
         <Link to="/" className="brand">
           Reserva<span>CR</span>
         </Link>
-        <span>Tu tiempo, mejor reservado.</span>
-        <small>Hecho para conectar negocios de Costa Rica.</small>
+        <span>{t("navigation:footer.tagline")}</span>
+        <small>{t("navigation:footer.description")}</small>
       </footer>
+      {import.meta.env.VITE_USERWAY_ACCOUNT_ID?.trim() && (
+        <button
+          id="userway-widget-trigger"
+          type="button"
+          className="userway-trigger"
+          aria-label={t("navigation:accessibility")}
+          title={t("navigation:accessibility")}
+          aria-haspopup="dialog"
+        >
+          <Accessibility size={26} />
+        </button>
+      )}
     </>
   );
 }

@@ -1,0 +1,42 @@
+{
+  "actions": {
+    "back": "Back to explore"
+  },
+  "timeZone": "Costa Rica time",
+  "services": {
+    "title": "Find your service"
+  },
+  "hours": {
+    "title": "Opening hours",
+    "closed": "Closed"
+  },
+  "booking": {
+    "eyebrow": "MAKE TIME FOR YOURSELF",
+    "title": "Book your appointment",
+    "service": "Select a service",
+    "moment": "Find your time",
+    "date": "Appointment date",
+    "choose": "Choose a service to see available times.",
+    "notes": "Note for the business (optional)",
+    "notesPlaceholder": "Anything we should know?",
+    "price": "Service price",
+    "login": "Sign in to book",
+    "client": "Bookings require a client account.",
+    "busy": "Confirming…",
+    "confirm": "Confirm booking",
+    "policy": "Cancellation is allowed up to {{minutes}} minutes before the appointment. Payment, if applicable, is arranged with the business."
+  },
+  "success": {
+    "title": "Your appointment is confirmed",
+    "description": "You will find it in your bookings. The email notification will be processed separately.",
+    "link": "View my bookings"
+  },
+  "empty": {
+    "title": "No available times",
+    "description": "Try another date."
+  },
+  "duration_one": "{{count}} minute",
+  "duration_other": "{{count}} minutes",
+  "capacity_one": "{{count}} spot",
+  "capacity_other": "{{count}} spots"
+}

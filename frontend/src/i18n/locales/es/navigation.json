@@ -1,0 +1,21 @@
+{
+  "menu": {
+    "open": "Abrir menú",
+    "close": "Cerrar menú"
+  },
+  "explore": "Explorar",
+  "bookings": "Mis reservas",
+  "business": "Mi negocio",
+  "schedule": "Agenda",
+  "admin": "Administración",
+  "addBusiness": "Agregar mi negocio",
+  "theme": "Cambiar tema",
+  "accessibility": "Abrir menú de accesibilidad",
+  "notifications": "Notificaciones",
+  "logout": "Cerrar sesión",
+  "login": "Ingresar",
+  "footer": {
+    "tagline": "Tu tiempo, mejor reservado.",
+    "description": "Hecho para conectar negocios de Costa Rica."
+  }
+}

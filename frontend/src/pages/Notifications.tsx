@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Bell } from "lucide-react";
 import { useLoad } from "../hooks/useLoad";
@@ -5,6 +6,7 @@ import { api, send } from "../services/api";
 import { PageHead, ErrorBox, Empty, Loading } from "../components/UI";
 import { dateTime } from "../utils/format";
 export default function Notifications() {
+  const { t } = useTranslation();
   const { data, loading, error, reload } = useLoad<
     {
       id: string;
@@ -17,8 +19,8 @@ export default function Notifications() {
   const [failure, setFailure] = useState("");
   return (
     <>
-      <PageHead eyebrow="AL DÍA" title="Tus notificaciones">
-        Confirmaciones y cambios de tus citas, siempre a mano.
+      <PageHead eyebrow={t("notifications:eyebrow")} title={t("notifications:title")}>
+        {t("notifications:description")}
       </PageHead>
       <ErrorBox message={error || failure} />
       {loading ? (
@@ -48,15 +50,15 @@ export default function Notifications() {
                     }
                   }}
                 >
-                  Marcar leída
+                  {t("notifications:read")}
                 </button>
               )}
             </article>
           ))}
         </div>
       ) : (
-        <Empty title="Todo tranquilo por aquí">
-          <p>Tus notificaciones aparecerán cuando reserves una cita.</p>
+        <Empty title={t("notifications:empty.title")}>
+          <p>{t("notifications:empty.description")}</p>
         </Empty>
       )}
     </>
