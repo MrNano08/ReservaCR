@@ -226,3 +226,53 @@ test('password recovery submits the current resolved UI language and preserves r
     assert.deepEqual(calls.at(-1), { url: '/auth/reset-password', body: { token, password: 'NewPassword123!' } });
   } finally { global.FormData = originalFormData; await i18n.changeLanguage('es'); }
 });
+
+test('booking creation and cancellation serialize the active resolved UI language', async () => {
+  const path = require('node:path');
+  const { api, send } = require('../src/services/api.ts');
+  const calls = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options) => {
+    calls.push({ url, method: options.method, body: JSON.parse(options.body) });
+    return { ok: true, json: async () => ({ code: 'CR-QA' }) };
+  };
+  function loadHandler(screen, matches, dependencies) {
+    const filename = path.join(__dirname, '../src/pages', screen + '.tsx');
+    const source = ts.createSourceFile(filename, fs.readFileSync(filename, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    let handler;
+    function visit(node) {
+      if (matches(node, source)) handler = node;
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+    assert.ok(handler, `${screen}: real request handler must exist`);
+    const output = ts.transpileModule(`module.exports = ${handler.getText(source)}`, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    const module = { exports: {} };
+    new Function('module', ...Object.keys(dependencies), output)(module, ...Object.values(dependencies));
+    return module.exports;
+  }
+  const noop = () => {};
+  const common = { api, send, i18n, setBusy: noop, setFailure: noop };
+  const payload = { serviceId: 'service-id', slot: '2026-11-01T18:00:00Z', notes: 'Original notes', key: { current: 'unchanged-key' } };
+  const create = loadHandler('BusinessDetail', (node, source) => ts.isArrowFunction(node) && node.getText(source).includes('send("POST"'),
+    { ...common, ...payload, setSuccess: noop, availability: { reload: noop } });
+  const cancel = loadHandler('Bookings', node => ts.isFunctionDeclaration(node) && node.name?.text === 'change',
+    { ...common, reason: 'Original reason', setCancel: noop, setReason: noop, reload: noop });
+  try {
+    for (const [selected, expected] of [['en', 'en'], ['es', 'es'], ['en-US', 'en'], ['fr', 'es']]) {
+      await i18n.changeLanguage(selected);
+      await create();
+      assert.deepEqual(calls.at(-1), { url: '/api/bookings', method: 'POST', body: {
+        serviceId: payload.serviceId, startAt: payload.slot, notes: payload.notes, idempotencyKey: payload.key.current, language: expected,
+      } });
+      await cancel({ id: 'booking-id' }, 'CANCELLED');
+      assert.deepEqual(calls.at(-1), { url: '/api/bookings/booking-id', method: 'PATCH', body: {
+        status: 'CANCELLED', reason: 'Original reason', language: expected,
+      } });
+    }
+    await cancel({ id: 'booking-id' }, 'COMPLETED');
+    assert.deepEqual(calls.at(-1).body, { status: 'COMPLETED', reason: 'Original reason' });
+  } finally { global.fetch = originalFetch; await i18n.changeLanguage('es'); }
+});

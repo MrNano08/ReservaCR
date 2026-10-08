@@ -52,6 +52,7 @@ export class BookingsController {
             startAt: z.iso.datetime({ offset: true }),
             notes: text(500, 0).default(""),
             idempotencyKey: z.string().uuid(),
+            language: z.enum(["es", "en"]).optional(),
           })
           .strict(),
         body,
@@ -76,10 +77,11 @@ export class BookingsController {
         .object({
           status: z.enum(["CANCELLED", "COMPLETED", "NO_SHOW"]),
           reason: text(300, 0).default(""),
+          language: z.enum(["es", "en"]).optional(),
         })
         .strict(),
       body,
     );
-    return this.bookings.change(req.user, id(value), d.status, d.reason);
+    return this.bookings.change(req.user, id(value), d.status, d.reason, d.language);
   }
 }

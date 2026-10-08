@@ -18,7 +18,7 @@ import {
   minuteTime,
 } from "../utils/format";
 export default function BusinessDetail() {
-  const { t } = useTranslation("business");
+  const { t, i18n } = useTranslation("business");
   const { id } = useParams();
   const { data: b, loading, error } = useLoad<Business>(`/businesses/${id}`);
   const { user } = useAuth();
@@ -224,6 +224,7 @@ export default function BusinessDetail() {
                           startAt: slot,
                           notes,
                           idempotencyKey: key.current,
+                          language: i18n.resolvedLanguage?.split("-")[0] === "en" ? "en" : "es",
                         }),
                       );
                       setSuccess(r);

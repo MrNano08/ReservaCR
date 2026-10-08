@@ -8,6 +8,9 @@ import { z } from "zod";
 import nodemailer from "nodemailer";
 import { createServer, Socket } from "node:net";
 import { compare } from "bcryptjs";
+import { BookingsController } from "../src/bookings/bookings.controller";
+import { BookingsService } from "../src/bookings/bookings.service";
+import { AuthRequest } from "../src/auth/guard";
 import { AuthController } from "../src/auth/auth.controller";
 import { EntityManager } from "typeorm";
 import { languageOf } from "../src/common/language";
@@ -16,7 +19,7 @@ import { parse } from "../src/common/validation";
 import { bookingMessage, passwordResetMessage, messageHtml } from "../src/notifications/templates";
 import { enqueueBooking, NotificationsService } from "../src/notifications/notifications.service";
 import { AuthService, safeUser } from "../src/auth/auth.service";
-import { User, Business, Booking, Notification, PasswordReset, Session } from "../src/database/entities";
+import { User, Business, Booking, Notification, PasswordReset, Session, Service, AuditLog } from "../src/database/entities";
 import { db } from "../src/database/data-source";
 import { config } from "../src/common/config";
 import { UserLanguage1790000000002 } from "../src/database/migrations/UserLanguage";
@@ -88,9 +91,7 @@ test("cola: idioma de cada destinatario, no de otra sesión; solo crea nuevos su
   assert.equal(saved.length, 4);
 });
 
-test("Auth: idioma solicitado, fallback, validación y token por SMTP local sin DB", async () => {
-  const originalRepository = db.getRepository, originalTransaction = db.transaction;
-  const originalConfig = { ...config };
+async function localSmtp() {
   const messages: string[] = [];
   const sockets = new Set<Socket>();
   const server = createServer(socket => {
@@ -120,6 +121,16 @@ test("Auth: idioma solicitado, fallback, validación y token por SMTP local sin 
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   Object.assign(config, { SMTP_HOST: "127.0.0.1", SMTP_PORT: address.port, SMTP_SECURE: "false", SMTP_USER: undefined, SMTP_PASSWORD: undefined });
+  return { messages, close: async () => {
+    for (const socket of sockets) socket.destroy();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  } };
+}
+
+test("Auth: idioma solicitado, fallback, validación y token por SMTP local sin DB", async () => {
+  const originalRepository = db.getRepository, originalTransaction = db.transaction;
+  const originalConfig = { ...config };
+  const { messages, close } = await localSmtp();
   const user = { id: "u", email: "qa@example.test", language: "es" as string | undefined, passwordHash: "original" };
   let exists = true, resetCount = 0;
   let stored: { userId: string; tokenHash: string; expiresAt: Date } | undefined;
@@ -186,8 +197,7 @@ test("Auth: idioma solicitado, fallback, validación y token por SMTP local sin 
   } finally {
     db.getRepository = originalRepository; db.transaction = originalTransaction;
     Object.assign(config, originalConfig);
-    for (const socket of sockets) socket.destroy();
-    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    await close();
   }
 });
 
@@ -284,4 +294,141 @@ test("todos los códigos implementados tienen traducción ES/EN", () => {
   }
   for (const code of codes) { assert.ok(es[code], `ES missing ${code}`); assert.ok(en[code], `EN missing ${code}`); }
   assert.ok(codes.size > 30);
+});
+
+test("Bookings: creación/cancelación, idiomas por destinatario y SMTP local sin DB", async () => {
+  const originalRepository = db.getRepository, originalTransaction = db.transaction;
+  const originalConfig = { ...config };
+  const { messages, close } = await localSmtp();
+  const client = Object.assign(new User(), { id: "11111111-1111-4111-8111-111111111111", role: "CLIENT", email: "client@example.test", language: "es" });
+  const owner = Object.assign(new User(), { id: "22222222-2222-4222-8222-222222222222", role: "BUSINESS", email: "owner@example.test", language: "es" });
+  const business = Object.assign(new Business(), { id: "33333333-3333-4333-8333-333333333333", ownerId: owner.id, name: "QA Business", cancellationMinutes: 60 });
+  const service = Object.assign(new Service(), { id: "44444444-4444-4444-8444-444444444444", businessId: business.id, name: "QA Service", price: "10.00" });
+  const startAt = new Date(Date.now() + 2 * 86400000).toISOString();
+  const endAt = new Date(new Date(startAt).getTime() + 3600000).toISOString();
+  const jobs: Notification[] = [];
+  let booking: Booking | undefined, reads = 0;
+  const manager = {
+    findOneBy: async () => null,
+    findOneByOrFail: async (entity: unknown, where: { id: string }) => entity === Business ? business : where.id === client.id ? client : owner,
+    getRepository: (entity: unknown) => {
+      reads++;
+      if (entity === Notification) {
+        const query = { where: () => query, orderBy: () => query, setLock: () => query, setOnLocked: () => query,
+          getOne: async () => jobs.find(job => job.status === "PENDING") ?? null };
+        return { createQueryBuilder: () => query };
+      }
+      return { findOneBy: async () => service,
+        findOne: async () => entity === User ? client : entity === Business ? business : booking ? { ...booking, business } : null,
+        findOneOrFail: async () => booking };
+    },
+    save: async (entity: unknown, value?: object) => {
+      if (entity === Booking) {
+        booking = Object.assign(new Booking(), value, { id: "55555555-5555-4555-8555-555555555555", status: "CONFIRMED" });
+        assert.equal("language" in booking, false);
+        return booking;
+      }
+      if (entity === Notification) {
+        const job = Object.assign(new Notification(), value, { id: `job-${jobs.length}`, status: "PENDING", attempts: 0 });
+        jobs.push(job); return job;
+      }
+      if (entity === AuditLog) return value;
+      if (entity === booking || jobs.includes(entity as Notification)) return entity;
+      assert.fail("unexpected write: user persistence must not change");
+    },
+  };
+  db.getRepository = manager.getRepository as unknown as typeof db.getRepository;
+  db.transaction = ((isolationOrRun: unknown, run?: (m: unknown) => Promise<unknown>) =>
+    (run ?? isolationOrRun as (m: unknown) => Promise<unknown>)(manager)) as typeof db.transaction;
+  const bookings = new BookingsService();
+  // Only availability/storage are isolated; controller, service, queue, templates and SMTP worker are real.
+  bookings.availability = async () => ({ day: startAt.slice(0, 10), service, slots: [{ startAt, endAt, remaining: 1 }] });
+  const controller = new BookingsController(bookings, new AuthService());
+  const req = (user: User) => ({ user }) as AuthRequest;
+  const worker = new NotificationsService();
+  const payload = { serviceId: service.id, startAt, notes: "", idempotencyKey: "66666666-6666-4666-8666-666666666666" };
+  const cancellationReason = "Cierre por reparación: mañana & <urgente>";
+  function decodeSubject(raw: string) {
+    return raw.match(/^Subject: (.*(?:\r\n[ \t].*)*)/m)![1].replace(/\r\n[ \t]+/g, " ").trim()
+      .replace(/\?=\s+=\?/g, "?==?").replace(/=\?UTF-8\?([BQ])\?([^?]+)\?=/gi, (_match, encoding, value) =>
+      encoding.toUpperCase() === "B" ? Buffer.from(value, "base64").toString("utf8")
+        : decodeURIComponent(value.replace(/_/g, " ").replace(/=([a-f0-9]{2})/gi, "%$1")));
+  }
+  async function verifyPair(clientLanguage: "es" | "en", ownerLanguage: "es" | "en", cancelled: boolean) {
+    const pair = jobs.slice(-2);
+    const before = messages.length;
+    for (const [index, language] of [clientLanguage, ownerLanguage].entries()) {
+      const job = pair[index];
+      const expected = `${language === "en" ? "Booking" : "Reserva"} ${cancelled ? language === "en" ? "cancelled" : "cancelada" : language === "en" ? "confirmed" : "confirmada"}`;
+      assert.ok(job.subject.startsWith(expected), job.subject);
+      assert.ok(job.body.includes(language === "en" ? "Status:" : "Estado:"));
+      assert.equal(job.body.includes(language === "en" ? "Estado:" : "Status:"), false);
+      if (cancelled) assert.ok(job.body.includes(`${language === "en" ? "Reason" : "Motivo"}: ${cancellationReason}`));
+      assert.equal(job.userId, index === 0 ? client.id : owner.id);
+    }
+    await worker.flush();
+    assert.equal(messages.length, before + 2);
+    for (const [index, job] of pair.entries()) {
+      const raw = messages[before + index];
+      assert.equal(decodeSubject(raw), job.subject);
+      assert.ok(raw.includes(job.email));
+      assert.ok(raw.replace(/=\r\n/g, "").includes(index === 0 ? clientLanguage === "en" ? "Status:" : "Estado:" : ownerLanguage === "en" ? "Status:" : "Estado:"));
+      if (cancelled) {
+        const decoded = Buffer.from(raw.replace(/=\r\n/g, "").replace(/=([a-f0-9]{2})/gi,
+          (_match, hex) => String.fromCharCode(parseInt(hex, 16))), "latin1").toString("utf8");
+        assert.ok(decoded.includes(cancellationReason), "SMTP conserva el motivo original en texto");
+        assert.ok(decoded.includes("&amp; &lt;urgente&gt;"), "SMTP escapa el motivo en HTML");
+      }
+      assert.equal(job.status, "SENT");
+    }
+  }
+  try {
+    const cases = [
+      { request: "en", client: "es", owner: "es", expected: "en" },
+      { request: "es", client: "es", owner: "es", expected: "es" },
+      { request: "es", client: "es", owner: "en", expected: "es" },
+      { request: undefined, client: "en", owner: "es", expected: "en" },
+      { request: undefined, client: "invalid", owner: "invalid", expected: "es" },
+    ] as const;
+    for (const c of cases) {
+      Object.assign(client, { language: c.client }); Object.assign(owner, { language: c.owner });
+      booking = undefined;
+      await controller.create(req(client), { ...payload, ...(c.request ? { language: c.request } : {}) });
+      await verifyPair(c.expected, c.owner === "en" ? "en" : "es", false);
+      assert.equal(client.language, c.client); assert.equal(owner.language, c.owner);
+    }
+    const previousReads = reads, previousJobs = jobs.length;
+    for (const operation of [() => controller.create(req(client), { ...payload, language: "fr" }),
+      () => controller.change(req(client), booking!.id, { status: "CANCELLED", language: "fr" })]) {
+      assert.throws(operation, error => error instanceof BadRequestException && error.getStatus() === 400);
+    }
+    assert.equal(reads, previousReads); assert.equal(jobs.length, previousJobs);
+    for (const c of [
+      { actor: client, request: "en", client: "es", owner: "es", expected: "en" },
+      { actor: client, request: "es", client: "en", owner: "en", expected: "es" },
+      { actor: client, request: undefined, client: "en", owner: "es", expected: "en" },
+      { actor: owner, request: "en", client: "es", owner: "es", expected: "es" },
+      { actor: owner, request: "es", client: "en", owner: "en", expected: "en" },
+      { actor: owner, request: "en", client: "es", owner: "en", expected: "es" },
+      { actor: owner, request: "es", client: "en", owner: "es", expected: "en" },
+      { actor: owner, request: "en", client: "invalid", owner: "invalid", expected: "es" },
+      { actor: owner, request: "en", client: undefined, owner: undefined, expected: "es" },
+    ] as const) {
+      Object.assign(client, { language: c.client }); Object.assign(owner, { language: c.owner });
+      booking!.status = "CONFIRMED";
+      await controller.change(req(c.actor), booking!.id, { status: "CANCELLED", reason: cancellationReason, ...(c.request ? { language: c.request } : {}) });
+      assert.equal(booking!.cancellationReason, cancellationReason);
+      await verifyPair(c.expected, c.owner === "en" ? "en" : "es", true);
+      assert.equal(client.language, c.client); assert.equal(owner.language, c.owner);
+      const count = jobs.length, sent = messages.length;
+      await controller.change(req(c.actor), booking!.id, { status: "CANCELLED", reason: cancellationReason, ...(c.request ? { language: c.request } : {}) });
+      await worker.flush();
+      assert.equal(jobs.length, count, "cancelación repetida no duplica notificaciones");
+      assert.equal(messages.length, sent, "cancelación repetida no duplica correos");
+    }
+  } finally {
+    worker.onModuleDestroy(); await close();
+    db.getRepository = originalRepository; db.transaction = originalTransaction;
+    Object.assign(config, originalConfig);
+  }
 });

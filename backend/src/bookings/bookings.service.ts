@@ -28,6 +28,7 @@ import {
   SLOT,
 } from "../common/time";
 import { enqueueBooking } from "../notifications/notifications.service";
+import { Language } from "../common/language";
 @Injectable()
 export class BookingsService {
   async availability(
@@ -130,6 +131,7 @@ export class BookingsService {
       startAt: string;
       notes: string;
       idempotencyKey: string;
+      language?: Language;
     },
   ) {
     const service = await db
@@ -188,7 +190,7 @@ export class BookingsService {
         idempotencyKey: data.idempotencyKey,
         code: `CR-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`,
       });
-      await enqueueBooking(m, b, "confirmada");
+      await enqueueBooking(m, b, "confirmada", data.language);
       await m.save(AuditLog, {
         actorId: user.id,
         action: "BOOKING_CONFIRMED",
@@ -238,6 +240,7 @@ export class BookingsService {
     bookingId: string,
     status: Booking["status"],
     reason: string,
+    language?: Language,
   ) {
     const initial = await db
       .getRepository(Booking)
@@ -290,7 +293,7 @@ export class BookingsService {
       }
       b.status = status;
       await m.save(b);
-      if (status === "CANCELLED") await enqueueBooking(m, b, "cancelada");
+      if (status === "CANCELLED") await enqueueBooking(m, b, "cancelada", user.role === "CLIENT" ? language : undefined);
       await m.save(AuditLog, {
         actorId: user.id,
         action: `BOOKING_${status}`,

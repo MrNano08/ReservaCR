@@ -10,11 +10,13 @@ import { db } from "../database/data-source";
 import { Notification, Booking, User, Business } from "../database/entities";
 import { config } from "../common/config";
 import { bookingMessage, messageHtml } from "./templates";
+import { Language } from "../common/language";
 
 export async function enqueueBooking(
   m: EntityManager,
   b: Booking,
   kind: "confirmada" | "cancelada",
+  clientLanguage?: Language,
 ) {
   const business = await m.findOneByOrFail(Business, { id: b.businessId });
 
@@ -24,7 +26,8 @@ export async function enqueueBooking(
   ]);
 
   for (const [index, u] of recipients.entries()) {
-    const message = bookingMessage(u.language, kind, index === 0 ? "client" : "owner", {
+    const language = index === 0 ? clientLanguage ?? u.language ?? "es" : u.language ?? "es";
+    const message = bookingMessage(language, kind, index === 0 ? "client" : "owner", {
       serviceName: b.serviceName,
       businessName: business.name,
       startAt: b.startAt,

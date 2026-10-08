@@ -17,7 +17,7 @@ import {
 } from "../components/UI";
 import { dateTime, money, time, number } from "../utils/format";
 export default function Bookings() {
-  const { t } = useTranslation("bookings");
+  const { t, i18n } = useTranslation("bookings");
   const { user } = useAuth();
   const { data, loading, error, reload } = useLoad<Booking[]>("/bookings");
   const [filter, setFilter] = useState("upcoming"),
@@ -43,7 +43,7 @@ export default function Bookings() {
     setBusy(b.id);
     setFailure("");
     try {
-      await api(`/bookings/${b.id}`, send("PATCH", { status, reason }));
+      await api(`/bookings/${b.id}`, send("PATCH", { status, reason, ...(status === "CANCELLED" ? { language: i18n.resolvedLanguage?.split("-")[0] === "en" ? "en" : "es" } : {}) }));
       setCancel(null);
       setReason("");
       reload();
