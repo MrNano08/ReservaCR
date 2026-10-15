@@ -6,6 +6,8 @@ import { useLoad } from "../hooks/useLoad";
 import { Business, Category, Hour, Service } from "../types";
 import { api, send, ApiError } from "../services/api";
 import { bilingualText, categoryLabel } from "../i18n/content";
+import { useLocalizedValidation } from "../i18n/validation";
+import { validBusinessPhone } from "../utils/phone";
 import { PageHead, Field, ErrorBox, Loading, Badge } from "../components/UI";
 import {
   weekdays,
@@ -28,6 +30,8 @@ const blank = {
   cancellationMinutes: 120,
 };
 export default function Owner() {
+  const profileValidation = useLocalizedValidation();
+  const serviceValidation = useLocalizedValidation();
   const { t } = useTranslation("owner");
   const categories = useLoad<Category[]>("/categories");
   const [b, setB] = useState<Business | null>(null),
@@ -173,9 +177,14 @@ export default function Owner() {
       )}
       {tab === "profile" && (
         <form
+          {...profileValidation}
           className="panel form-panel"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!validBusinessPhone(profile.phone)) {
+              setError("validation:invalidPhone");
+              return;
+            }
             void action(
               () => api("/owner/business", send("PUT", profile)),
               "owner:notice.profile",
@@ -239,7 +248,6 @@ export default function Owner() {
               <input
                 type="tel"
                 required
-                minLength={8}
                 maxLength={25}
                 value={profile.phone}
                 onChange={(e) => field("phone", e.target.value)}
@@ -344,6 +352,7 @@ export default function Owner() {
           )}
           {service && (
             <form
+              {...serviceValidation}
               className="editor"
               onSubmit={(e) => {
                 e.preventDefault();

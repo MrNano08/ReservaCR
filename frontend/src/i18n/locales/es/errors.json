@@ -48,5 +48,7 @@
   "RATE_LIMITED": "Demasiadas solicitudes. Inténtalo más tarde.",
   "SERVICE_UNAVAILABLE": "El servicio no está disponible. Inténtalo más tarde.",
   "UNKNOWN_ERROR": "No se pudo completar la solicitud.",
-  "ADMIN_CATEGORY_EXISTS": "Ya existe una categoría con ese nombre."
+  "ADMIN_CATEGORY_EXISTS": "Ya existe una categoría con ese nombre.",
+  "MAX_LENGTH": "Se excedió el límite de caracteres.",
+  "INVALID_PHONE": "Número de teléfono inválido."
 }

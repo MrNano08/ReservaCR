@@ -3,6 +3,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public fieldErrors?: unknown,
   ) {
     super(message);
   }
@@ -36,7 +37,8 @@ export async function api<T = any>(
       response.status,
       errorKey(data?.code, Array.isArray(data?.message)
         ? data.message.join(". ")
-        : typeof data?.message === "string" && data.message ? data.message : "errors:REQUEST_FAILED"),
+        : typeof data?.message === "string" && data.message ? data.message : "errors:REQUEST_FAILED", data?.fieldErrors),
+      data?.fieldErrors,
     );
   return data;
 }

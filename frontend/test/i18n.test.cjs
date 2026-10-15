@@ -276,3 +276,15 @@ test('booking creation and cancellation serialize the active resolved UI languag
     assert.deepEqual(calls.at(-1).body, { status: 'COMPLETED', reason: 'Original reason' });
   } finally { global.fetch = originalFetch; await i18n.changeLanguage('es'); }
 });
+
+test('phone and length errors translate from API fieldErrors in both languages', async () => {
+  const { validBusinessPhone } = require('../src/utils/phone.ts');
+  for (const value of ['87026279', '8702 6279', '8702-6279', '+506 8702 6279']) assert.equal(validBusinessPhone(value), true);
+  for (const value of ['abc123', '123', '1'.repeat(26), '12345678', '00000000', '+1 2025550123', '87026279 ext 1']) assert.equal(validBusinessPhone(value), false);
+  for (const [lang, phoneMessage] of [['es', 'Número de teléfono inválido.'], ['en', 'Invalid phone number.']]) {
+    await i18n.changeLanguage(lang);
+    assert.equal(errors.errorMessage(errors.errorKey('VALIDATION_ERROR', 'legacy', [{ field: 'phone', code: 'INVALID_PHONE' }])), phoneMessage);
+    assert.equal(errors.errorMessage(errors.errorKey('VALIDATION_ERROR', 'legacy', [{ field: 'name', code: 'MAX_LENGTH', max: 100 }])), i18n.t('validation:maxLength', {max: 100}));
+  }
+  await i18n.changeLanguage('es');
+});

@@ -8,7 +8,7 @@ import {
   Link,
   useLocation,
 } from "react-router-dom";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Role } from "./types";
 import Layout from "./components/Layout";
@@ -18,9 +18,9 @@ import Auth from "./pages/Auth";
 import PasswordRecovery from "./pages/PasswordRecovery";
 import BusinessDetail from "./pages/BusinessDetail";
 import Bookings from "./pages/Bookings";
-import Owner from "./pages/Owner";
-import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
+const Owner = lazy(() => import("./pages/Owner"));
+const Admin = lazy(() => import("./pages/Admin"));
 function Protected({ roles }: { roles?: Role[] }) {
   const { t } = useTranslation();
   const { user, loading } = useAuth();
@@ -39,7 +39,7 @@ function Protected({ roles }: { roles?: Role[] }) {
         <Link to="/">{t("common:actions.home")}</Link>
       </Empty>
     );
-  return <Outlet />;
+  return <Suspense fallback={<Loading />}><Outlet /></Suspense>;
 }
 function Scroll() {
   const { pathname } = useLocation();

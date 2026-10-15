@@ -43,3 +43,104 @@ test("capacidad compartida se respeta durante toda la duración", () => {
   assert.equal(fitsCapacity(d(600), d(660), 2, busy), true);
   assert.equal(fitsCapacity(d(600), d(660), 1, busy), false);
 });
+
+// Pure schema regression tests: no database connection or persistence.
+import { z } from "zod";
+import { businessPhone, text, parse } from "../src/common/validation";
+import { errorResponse } from "../src/common/errors";
+test("business phone validates CR formats and rejects invalid numbering", () => {
+  for (const value of ["87026279", "8702 6279", "8702-6279", "+506 8702 6279"])
+    assert.equal(parse(businessPhone, value), value);
+  for (const value of ["abc123", "123", "1".repeat(26), "12345678", "00000000", "+1 2025550123", "87026279 ext 1", "8702letters6279"])
+    assert.equal(businessPhone.safeParse(value).success, false, value);
+  assert.throws(() => parse(z.object({ phone: businessPhone }), { phone: "abc123" }), e => {
+    const response = errorResponse(e);
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.code, "VALIDATION_ERROR");
+    assert.deepEqual(response.fieldErrors, [{ field: "phone", message: "Número de teléfono inválido.", code: "INVALID_PHONE" }]);
+    return true;
+  });
+});
+test("text boundaries reject maximum + 1 including whitespace padding", () => {
+  for (const max of [25, 80, 100, 120, 190, 200, 300, 500, 2500]) {
+    assert.equal(parse(text(max), "a".repeat(max)).length, max);
+    for (const value of ["a".repeat(max + 1), "a".repeat(max) + " ", " ".repeat(max + 1)]) {
+      assert.throws(() => parse(z.object({ value: text(max) }), { value }), e => {
+        const response = errorResponse(e);
+        assert.equal(response.statusCode, 400);
+        assert.equal(response.code, "VALIDATION_ERROR");
+        assert.ok((response.fieldErrors as { code: string; max: number }[]).some(field => field.code === "MAX_LENGTH" && field.max === max));
+        return true;
+      });
+    }
+  }
+});
+
+import { BusinessesController } from "../src/businesses/businesses.controller";
+import { BusinessesService } from "../src/businesses/businesses.service";
+import { AuthRequest } from "../src/auth/guard";
+test("API controllers reject oversized profile, service and catalog inputs before service calls", () => {
+  let calls = 0;
+  const svc = { saveProfile: (_user: unknown, data: unknown) => { calls++; return data; },
+    saveService: (_user: unknown, data: unknown) => { calls++; return data; },
+    catalog: (data: unknown) => { calls++; return data; } } as unknown as BusinessesService;
+  const controller = new BusinessesController(svc);
+  const req = { user: { id: "qa", role: "BUSINESS" } } as AuthRequest;
+  const profile = { name: "Negocio", description: "Descripción válida", descriptionEn: "", categoryId: "11111111-1111-4111-8111-111111111111", province: "Guanacaste", canton: "Nicoya", address: "Dirección válida", phone: "87026279", capacity: 1, cancellationMinutes: 120 };
+  const service = { name: "Servicio", nameEn: "", description: "", descriptionEn: "", duration: 60, price: 1000, active: true };
+  function boundary(base: object, field: string, max: number, run: (data: unknown) => unknown) {
+    run({ ...base, [field]: "a".repeat(max) });
+    const before = calls;
+    assert.throws(() => run({ ...base, [field]: "a".repeat(max + 1) }), e => errorResponse(e).statusCode === 400);
+    assert.equal(calls, before);
+  }
+  for (const [field, max] of Object.entries({ name: 120, description: 2500, descriptionEn: 2500, canton: 80, address: 300 }))
+    boundary(profile, field, max, data => controller.save(req, data));
+  for (const [field, max] of Object.entries({ name: 100, nameEn: 100, description: 500, descriptionEn: 500 }))
+    boundary(service, field, max, data => controller.createService(req, data));
+  boundary({}, "q", 100, data => controller.catalog(data));
+  const before = calls;
+  for (const phone of ["abc123", "123", "1".repeat(26), "12345678"])
+    assert.throws(() => controller.save(req, { ...profile, phone }), e => errorResponse(e).statusCode === 400);
+  assert.equal(calls, before);
+});
+
+import { Module } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { AuthService } from "../src/auth/auth.service";
+import { Errors } from "../src/common/errors";
+test("manual HTTP requests cannot bypass phone or length validation (isolated API)", async () => {
+  // Only these real controllers/guards/filters are mounted. No AppModule, DB or workers.
+  let writes = 0;
+  @Module({ controllers: [BusinessesController], providers: [
+    { provide: AuthService, useValue: { resolve: async () => ({ id: "qa", role: "BUSINESS" }) } },
+    { provide: BusinessesService, useValue: {
+      saveProfile: (_user: unknown, data: unknown) => { writes++; return data; },
+      catalog: (data: unknown) => data,
+    } },
+  ] })
+  class IsolatedApi {}
+  const app = await NestFactory.create(IsolatedApi, { logger: false });
+  app.setGlobalPrefix("api");
+  app.useGlobalFilters(new Errors());
+  try {
+    await app.listen(0, "127.0.0.1");
+    const url = await app.getUrl();
+    const profile = { name: "Negocio", description: "Descripción válida", categoryId: "11111111-1111-4111-8111-111111111111", province: "Guanacaste", canton: "Nicoya", address: "Dirección válida", phone: "87026279", capacity: 1, cancellationMinutes: 120 };
+    for (const phone of ["87026279", "8702 6279", "8702-6279", "+506 8702 6279", "abc123", "123", "1".repeat(26), "12345678"]) {
+      const response = await fetch(url + "/api/owner/business", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...profile, phone }) });
+      const valid = ["87026279", "8702 6279", "8702-6279", "+506 8702 6279"].includes(phone);
+      assert.equal(response.status, valid ? 200 : 400);
+      const body = await response.json() as { code: string; statusCode: number; fieldErrors: { field: string }[] };
+      if (!valid) { assert.equal(body.code, "VALIDATION_ERROR"); assert.equal(body.statusCode, 400); assert.equal(body.fieldErrors[0].field, "phone"); }
+    }
+    assert.equal(writes, 4);
+    for (const length of [100, 101]) {
+      const response = await fetch(url + "/api/businesses?q=" + "a".repeat(length));
+      assert.equal(response.status, length === 100 ? 200 : 400);
+    }
+    const response = await fetch(url + "/api/owner/business", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...profile, descriptionEn: "a".repeat(2501) }) });
+    assert.equal(response.status, 400);
+    assert.equal(writes, 4);
+  } finally { await app.close(); }
+});

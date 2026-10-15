@@ -103,6 +103,7 @@ export default function Bookings() {
           <Search size={18} />
           <input
             placeholder={t("bookings:search")}
+            maxLength={100}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />

@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
+  color-scheme: dark;
   font-family: "DM Sans", sans-serif;
   color: #edf1eb;
   background: #101713;
@@ -19,6 +20,22 @@
 }
 body {
   margin: 0;
+}
+/* User content must wrap without expanding grid/flex tracks. */
+main {
+  overflow-wrap: anywhere;
+}
+.hero > *, .business-grid > *, .detail-grid > *, .form-grid > *,
+.auth-layout > *, .stats-grid > *, .row > *, .reservation-main,
+.notification > div, .management-row > *, .service-option > span,
+.field, .table-scroll {
+  min-width: 0;
+}
+.row, .info-strip, .hours-summary, .booking-total {
+  flex-wrap: wrap;
+}
+.button {
+  max-width: 100%;
 }
 button,
 input,
@@ -78,6 +95,19 @@ textarea {
   border-radius: 9px;
   min-width: 0;
   outline: none;
+}
+option, optgroup {
+  color: var(--text);
+  background: var(--bg);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+input:disabled, select:disabled, textarea:disabled {
+  color: var(--muted);
+  background: var(--panel2);
+  cursor: not-allowed;
 }
 input:focus,
 select:focus,
@@ -212,7 +242,7 @@ nav a.active {
   justify-content: center;
   gap: 12px;
   font-size: 14px;
-  white-space: nowrap;
+  white-space: normal;
 }
 .button:hover {
   background: #d3f7b4;
@@ -321,6 +351,11 @@ main {
 }
 .search-bar input {
   flex: 1;
+}
+.search-bar input:focus-visible,
+.search-bar select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .search-bar select {
   max-width: 140px;
@@ -1233,6 +1268,7 @@ footer small {
 }
 .table-scroll {
   overflow-x: auto;
+  max-width: 100%;
 }
 table {
   border-collapse: collapse;
@@ -1286,6 +1322,7 @@ table h3 {
   font-size: 12px;
 }
 [data-theme="light"] {
+  color-scheme: light;
   --bg: #f5f6f1;
   --panel: #fff;
   --panel2: #edf0e6;

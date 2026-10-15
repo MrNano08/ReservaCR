@@ -48,5 +48,7 @@
   "RATE_LIMITED": "Too many requests. Try again later.",
   "SERVICE_UNAVAILABLE": "The service is unavailable. Try again later.",
   "UNKNOWN_ERROR": "The request could not be completed.",
-  "ADMIN_CATEGORY_EXISTS": "A category with that name already exists."
+  "ADMIN_CATEGORY_EXISTS": "A category with that name already exists.",
+  "MAX_LENGTH": "The character limit was exceeded.",
+  "INVALID_PHONE": "Invalid phone number."
 }

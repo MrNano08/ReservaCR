@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, Children, isValidElement } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "../i18n/errors";
 import {
@@ -63,10 +63,18 @@ export function Field({
   label: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
+  const textarea = Children.toArray(children).find(child => isValidElement(child) && child.type === "textarea");
+  const props = isValidElement<{ value?: string; maxLength?: number }>(textarea) ? textarea.props : undefined;
   return (
     <label className="field">
       <span>{label}</span>
       {children}
+      {props?.maxLength && (
+        <small className="hint" title={t("validation:maxLength", { max: props.maxLength })}>
+          {props.value?.length ?? 0} / {props.maxLength}
+        </small>
+      )}
     </label>
   );
 }

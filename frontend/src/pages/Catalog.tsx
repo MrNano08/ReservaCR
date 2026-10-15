@@ -53,7 +53,8 @@ export default function Catalog() {
             className="search-bar"
             onSubmit={(e) => {
               e.preventDefault();
-              setSearch(q);
+              if (!q.trim() || q.length > 100) return;
+              setSearch(q.trim());
               setPage(1);
             }}
           >
@@ -62,6 +63,7 @@ export default function Catalog() {
               aria-label={t("catalog:search.label")}
               placeholder={t("catalog:search.placeholder")}
               value={q}
+              maxLength={100}
               onChange={(e) => setQ(e.target.value)}
             />
             <span className="search-divider" />
@@ -79,7 +81,7 @@ export default function Catalog() {
                 <option key={p}>{p}</option>
               ))}
             </select>
-            <button className="button" type="submit">
+            <button className="button" type="submit" disabled={!q.trim() || q.length > 100}>
               {t("catalog:search.submit")} <ArrowUpRight size={18} />
             </button>
           </form>

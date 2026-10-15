@@ -24,7 +24,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { AuthGuard, Roles, AuthRequest } from "../auth/guard";
 import { BusinessesService } from "./businesses.service";
-import { parse, id, idSchema, text } from "../common/validation";
+import { parse, id, idSchema, text, businessPhone } from "../common/validation";
 import { config } from "../common/config";
 import { db } from "../database/data-source";
 import { Business, Category, AuditLog } from "../database/entities";
@@ -53,7 +53,7 @@ const profile = z
     ]),
     canton: text(80, 2),
     address: text(300, 5),
-    phone: text(25, 8),
+    phone: businessPhone,
     capacity: z.number().int().min(1).max(50),
     cancellationMinutes: z.number().int().min(0).max(10080),
   })
