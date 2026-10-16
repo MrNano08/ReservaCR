@@ -12,7 +12,7 @@ import { Throttle } from "@nestjs/throttler";
 import { z } from "zod";
 import { AuthService, safeUser } from "./auth.service";
 import { AuthGuard, AuthRequest } from "./guard";
-import { parse, email, text } from "../common/validation";
+import { parse, email, fullName, registrationPhone } from "../common/validation";
 import { config } from "../common/config";
 const cookie = {
   httpOnly: true,
@@ -32,10 +32,10 @@ export class AuthController {
     const d = parse(
       z
         .object({
-          name: text(100, 2),
+          name: fullName,
           email,
           password: z.string().min(10).max(72),
-          phone: text(25, 0).default(""),
+          phone: registrationPhone.default(""),
           role: z.enum(["CLIENT", "BUSINESS"]).default("CLIENT"),
         })
         .strict(),

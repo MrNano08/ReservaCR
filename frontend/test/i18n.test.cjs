@@ -279,11 +279,31 @@ test('booking creation and cancellation serialize the active resolved UI languag
 
 test('phone and length errors translate from API fieldErrors in both languages', async () => {
   const { validBusinessPhone } = require('../src/utils/phone.ts');
+  const { detectedPhoneRegion, filterNameInput, filterPhoneInput, validFullName, validRegistrationPhone } = require('../src/utils/registration.ts');
+  for (const value of ['Erick Mora', 'María José Núñez', 'Jean-Pierre Mora']) assert.equal(validFullName(value), true, value);
+  assert.equal(validFullName('454566565'), false);
+  for (const value of ['87026279', '+50687026279', '18448724681', '1-844-872-4681']) assert.equal(validRegistrationPhone(value), true, value);
+  for (const value of ['cderrtr55654', '123']) assert.equal(validRegistrationPhone(value), false, value);
+  assert.deepEqual(detectedPhoneRegion('87026279'), { country: 'CR', callingCode: '506' });
+  assert.deepEqual(detectedPhoneRegion('+50687026279'), { country: 'CR', callingCode: '506' });
+  assert.equal(filterNameInput('Erick 123 Mora @@@'), 'Erick  Mora ');
+  assert.equal(filterNameInput('454566565'), '');
+  assert.equal(filterPhoneInput('cderrtr55654'), '55654');
+  assert.equal(filterPhoneInput('abc'), '');
+  assert.equal(filterPhoneInput('+506 8702-6279'), '+506 8702-6279');
+  assert.deepEqual(detectedPhoneRegion('+1'), { country: 'US', callingCode: '1' });
+  assert.deepEqual(detectedPhoneRegion('+14155552671'), { country: 'US', callingCode: '1' });
+  assert.deepEqual(detectedPhoneRegion('18448724681'), { country: 'US', callingCode: '1' });
+  assert.deepEqual(detectedPhoneRegion('1-844-872-4681'), { country: 'US', callingCode: '1' });
+  assert.deepEqual(detectedPhoneRegion('+34'), { country: 'ES', callingCode: '34' });
+  assert.deepEqual(detectedPhoneRegion('+52'), { country: 'MX', callingCode: '52' });
+  assert.deepEqual(detectedPhoneRegion('+44'), { country: 'GB', callingCode: '44' });
   for (const value of ['87026279', '8702 6279', '8702-6279', '+506 8702 6279']) assert.equal(validBusinessPhone(value), true);
   for (const value of ['abc123', '123', '1'.repeat(26), '12345678', '00000000', '+1 2025550123', '87026279 ext 1']) assert.equal(validBusinessPhone(value), false);
   for (const [lang, phoneMessage] of [['es', 'Número de teléfono inválido.'], ['en', 'Invalid phone number.']]) {
     await i18n.changeLanguage(lang);
     assert.equal(errors.errorMessage(errors.errorKey('VALIDATION_ERROR', 'legacy', [{ field: 'phone', code: 'INVALID_PHONE' }])), phoneMessage);
+    assert.equal(errors.errorMessage(errors.errorKey('VALIDATION_ERROR', 'legacy', [{ field: 'name', code: 'INVALID_FULL_NAME' }])), i18n.t('validation:invalidFullName'));
     assert.equal(errors.errorMessage(errors.errorKey('VALIDATION_ERROR', 'legacy', [{ field: 'name', code: 'MAX_LENGTH', max: 100 }])), i18n.t('validation:maxLength', {max: 100}));
   }
   await i18n.changeLanguage('es');

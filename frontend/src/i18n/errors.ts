@@ -17,6 +17,7 @@ export function errorMessage(message: string): string {
 export function errorKey(code: unknown, message: string, fieldErrors?: unknown): string {
   if (code === "VALIDATION_ERROR" && Array.isArray(fieldErrors)) {
     if (fieldErrors.some(field => field?.code === "INVALID_PHONE")) return "validation:invalidPhone";
+    if (fieldErrors.some(field => field?.code === "INVALID_FULL_NAME")) return "validation:invalidFullName";
     const limit = fieldErrors.find(field => field?.code === "MAX_LENGTH" && Number.isSafeInteger(field.max));
     if (limit) return `validation:maxLength:${limit.max}`;
   }

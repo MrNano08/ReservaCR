@@ -5,8 +5,16 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck, ArrowRight } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { ErrorBox, Field } from "../components/UI";
+import {
+  detectedPhoneRegion,
+  filterNameInput,
+  filterPhoneInput,
+  hasOnlyPhoneCharacters,
+  validFullName,
+  validRegistrationPhone,
+} from "../utils/registration";
 export default function Auth({ register = false }: { register?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const validation = useLocalizedValidation();
   const [params] = useSearchParams();
   const [role, setRole] = useState(
@@ -14,8 +22,18 @@ export default function Auth({ register = false }: { register?: boolean }) {
   );
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [name, setName] = useState(""),
+    [phone, setPhone] = useState(""),
+    [nameTouched, setNameTouched] = useState(false),
+    [phoneTouched, setPhoneTouched] = useState(false);
   const auth = useAuth(),
     navigate = useNavigate();
+  const nameInvalid = nameTouched && !validFullName(name);
+  const phoneInvalid = Boolean(phone) && (!hasOnlyPhoneCharacters(phone) || (phoneTouched && !validRegistrationPhone(phone)));
+  const phoneRegion = detectedPhoneRegion(phone);
+  const countryName = phoneRegion
+    ? new Intl.DisplayNames([i18n.resolvedLanguage === "en" ? "en" : "es"], { type: "region" }).of(phoneRegion.country)
+    : undefined;
   return (
     <div className="auth-layout">
       <div className="auth-story">
@@ -59,6 +77,11 @@ export default function Auth({ register = false }: { register?: boolean }) {
           {...validation}
           onSubmit={async (e) => {
             e.preventDefault();
+            if (register && (!validFullName(name) || !validRegistrationPhone(phone))) {
+              setNameTouched(true);
+              setPhoneTouched(true);
+              return;
+            }
             setBusy(true);
             setError("");
             const d = Object.fromEntries(new FormData(e.currentTarget));
@@ -92,7 +115,20 @@ export default function Auth({ register = false }: { register?: boolean }) {
                   required
                   minLength={2}
                   maxLength={100}
+                  value={name}
+                  onChange={(e) => setName(filterNameInput(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                      if (!/^[\p{L}\p{M}\p{Zs}'’\p{Pd}]$/u.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }
+                  }}
+                  onBlur={() => setNameTouched(true)}
+                  aria-invalid={nameInvalid}
+                  aria-describedby={nameInvalid ? "register-name-error" : undefined}
                 />
+                {nameInvalid && <small id="register-name-error" className="field-error" role="alert">{t("validation:invalidFullName")}</small>}
               </Field>
               <Field label={t("auth:fields.phone")}>
                 <input
@@ -100,7 +136,25 @@ export default function Auth({ register = false }: { register?: boolean }) {
                   autoComplete="tel"
                   type="tel"
                   maxLength={25}
+                  value={phone}
+                  onChange={(e) => setPhone(filterPhoneInput(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                      if (!/[\d+()\s-]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }
+                  }}
+                  onBlur={() => setPhoneTouched(true)}
+                  aria-invalid={phoneInvalid}
+                  aria-describedby={phoneInvalid ? "register-phone-error" : phoneRegion ? "register-phone-region" : undefined}
                 />
+                {phoneInvalid && <small id="register-phone-error" className="field-error" role="alert">{t("validation:invalidPhone")}</small>}
+                {!phoneInvalid && phoneRegion && countryName && (
+                  <small id="register-phone-region" className="phone-region">
+                    {t("validation:countryRegion")}: {countryName} (+{phoneRegion.callingCode})
+                  </small>
+                )}
               </Field>
             </>
           )}

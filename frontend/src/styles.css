@@ -763,6 +763,19 @@ footer small {
   color: var(--muted);
   line-height: 1.7;
 }
+.field-error,
+.phone-region {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.field-error {
+  color: #ffc3b4;
+}
+.phone-region {
+  color: var(--muted);
+}
 .alert {
   padding: 14px 18px;
   border-radius: 9px;

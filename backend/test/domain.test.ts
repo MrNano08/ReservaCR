@@ -46,8 +46,22 @@ test("capacidad compartida se respeta durante toda la duración", () => {
 
 // Pure schema regression tests: no database connection or persistence.
 import { z } from "zod";
-import { businessPhone, text, parse } from "../src/common/validation";
+import { businessPhone, fullName, registrationPhone, text, parse } from "../src/common/validation";
 import { errorResponse } from "../src/common/errors";
+test("registration name and phone enforce the public contract", () => {
+  for (const value of ["Erick Mora", "María José Núñez", "Jean-Pierre Mora"])
+    assert.equal(fullName.safeParse(value).success, true, value);
+  for (const value of ["454566565", "1234", "@@@@", "   "])
+    assert.equal(fullName.safeParse(value).success, false, value);
+  for (const value of ["87026279", "8702 6279", "8702-6279", "+50687026279", "+506 8702 6279", "+14155552671", "18448724681", "1-844-872-4681"])
+    assert.equal(registrationPhone.safeParse(value).success, true, value);
+  for (const value of ["cderrtr55654", "abc123", "123", "00000000"])
+    assert.equal(registrationPhone.safeParse(value).success, false, value);
+  assert.throws(
+    () => parse(z.object({ name: fullName, phone: registrationPhone }), { name: "454566565", phone: "cderrtr55654" }),
+    (err: any) => err.status === 400 && err.response?.fieldErrors?.length === 2,
+  );
+});
 test("business phone validates CR formats and rejects invalid numbering", () => {
   for (const value of ["87026279", "8702 6279", "8702-6279", "+506 8702 6279"])
     assert.equal(parse(businessPhone, value), value);

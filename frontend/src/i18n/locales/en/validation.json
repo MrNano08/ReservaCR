@@ -5,5 +5,7 @@
   "maxLength": "Use no more than {{max}} characters.",
   "invalid": "Check the value of this field.",
   "passwordMismatch": "The passwords do not match.",
-  "invalidPhone": "Invalid phone number."
+  "invalidPhone": "Invalid phone number.",
+  "invalidFullName": "Invalid full name.",
+  "countryRegion": "Country/region"
 }
