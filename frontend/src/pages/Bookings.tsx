@@ -14,6 +14,7 @@ import {
   Loading,
   Empty,
   Field,
+  CharacterLimit,
 } from "../components/UI";
 import { dateTime, money, time, number } from "../utils/format";
 export default function Bookings() {
@@ -101,12 +102,15 @@ export default function Bookings() {
         </div>
         <label className="inline-search">
           <Search size={18} />
-          <input
-            placeholder={t("bookings:search")}
-            maxLength={100}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <span className="limit-control">
+            <input
+              placeholder={t("bookings:search")}
+              maxLength={100}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <CharacterLimit max={100} />
+          </span>
         </label>
       </div>
       <ErrorBox message={error || failure} />

@@ -91,10 +91,13 @@ test('known error codes, legacy messages and safe unknown-message fallback', asy
 });
 test('localized validation keeps original constraints', async () => {
   await i18n.changeLanguage('en');
+  assert.equal(i18n.t('validation:characterLimit', { max: 100 }), 'Maximum 100 characters');
   assert.equal(validationMessage({ validity: { valueMissing: true } }), 'This field is required.');
   assert.equal(validationMessage({ validity: { typeMismatch: true }, type: 'email' }), 'Enter a valid email address.');
   assert.equal(validationMessage({ validity: { tooShort: true }, minLength: 10 }), 'Use at least 10 characters.');
   assert.equal(validationMessage({ validity: { tooLong: true }, maxLength: 72 }), 'Use no more than 72 characters.');
+  await i18n.changeLanguage('es');
+  assert.equal(i18n.t('validation:characterLimit', { max: 100 }), 'Máximo 100 caracteres');
 });
 test('date, time, numbers and CRC/USD formats use current locale without changing Costa Rica time', async () => {
   const instant = '2026-10-05T03:00:00Z';

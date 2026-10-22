@@ -3,6 +3,7 @@
   "invalidEmail": "Ingresa un correo electrónico válido.",
   "minLength": "Usa al menos {{min}} caracteres.",
   "maxLength": "Usa como máximo {{max}} caracteres.",
+  "characterLimit": "Máximo {{max}} caracteres",
   "invalid": "Revisa el valor de este campo.",
   "passwordMismatch": "Las contraseñas no coinciden.",
   "invalidPhone": "Número de teléfono inválido.",

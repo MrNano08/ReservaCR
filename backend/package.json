@@ -26,7 +26,7 @@
     "nodemailer": "^10.0.10",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "typeorm": "^0.3.27",
     "zod": "^4.1.0"
   },

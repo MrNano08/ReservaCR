@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useLoad } from "../hooks/useLoad";
 import { Business, Category } from "../types";
-import { BusinessCard, ErrorBox, Loading, Empty } from "../components/UI";
+import { BusinessCard, CharacterLimit, ErrorBox, Loading, Empty } from "../components/UI";
 import { provinces } from "../utils/format";
 import { categoryLabel } from "../i18n/content";
 export default function Catalog() {
@@ -59,13 +59,16 @@ export default function Catalog() {
             }}
           >
             <Search size={21} />
-            <input
-              aria-label={t("catalog:search.label")}
-              placeholder={t("catalog:search.placeholder")}
-              value={q}
-              maxLength={100}
-              onChange={(e) => setQ(e.target.value)}
-            />
+            <div className="limit-control search-limit-control">
+              <input
+                aria-label={t("catalog:search.label")}
+                placeholder={t("catalog:search.placeholder")}
+                value={q}
+                maxLength={100}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <CharacterLimit max={100} />
+            </div>
             <span className="search-divider" />
             <MapPin size={19} />
             <select

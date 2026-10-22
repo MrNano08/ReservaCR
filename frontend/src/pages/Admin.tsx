@@ -10,6 +10,7 @@ import {
   Badge,
   Field,
   Empty,
+  CharacterLimit,
 } from "../components/UI";
 import { dateTime, money, weekdayName, minuteTime } from "../utils/format";
 import { bilingualText, categoryLabel, categoryCodes } from "../i18n/content";
@@ -178,14 +179,17 @@ export default function Admin() {
               });
             }}
           >
-            <input
-              aria-label={t("admin:categories.new")}
-              name="name"
-              required
-              minLength={2}
-              maxLength={80}
-              placeholder={t("admin:categories.placeholder")}
-            />
+            <div className="limit-control category-limit-control">
+              <input
+                aria-label={t("admin:categories.new")}
+                name="name"
+                required
+                minLength={2}
+                maxLength={80}
+                placeholder={t("admin:categories.placeholder")}
+              />
+              <CharacterLimit max={80} />
+            </div>
             <select name="code" aria-label={t("admin:categories.translation")}>
               <option value="">{t("admin:categories.original")}</option>
               {categoryCodes.map((code) => <option key={code} value={code}>{t(`common:categories.${code}`)}</option>)}
@@ -216,14 +220,17 @@ export default function Admin() {
                   );
                 }}
               >
-                <input
-                  name="name"
-                  aria-label={t("admin:categories.name")}
-                  defaultValue={c.name}
-                  required
-                  minLength={2}
-                  maxLength={80}
-                />
+                <div className="limit-control">
+                  <input
+                    name="name"
+                    aria-label={t("admin:categories.name")}
+                    defaultValue={c.name}
+                    required
+                    minLength={2}
+                    maxLength={80}
+                  />
+                  <CharacterLimit max={80} />
+                </div>
                 <select name="code" defaultValue={c.code ?? ""}
                   aria-label={t("admin:categories.translation")}>
                   <option value="">{t("admin:categories.original")}</option>

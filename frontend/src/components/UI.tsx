@@ -63,19 +63,29 @@ export function Field({
   label: string;
   children: ReactNode;
 }) {
-  const { t } = useTranslation();
-  const textarea = Children.toArray(children).find(child => isValidElement(child) && child.type === "textarea");
-  const props = isValidElement<{ value?: string; maxLength?: number }>(textarea) ? textarea.props : undefined;
+  const control = Children.toArray(children).find(
+    child => isValidElement(child) && (child.type === "input" || child.type === "textarea"),
+  );
+  const props = isValidElement<{ value?: string; maxLength?: number }>(control) ? control.props : undefined;
   return (
     <label className="field">
       <span>{label}</span>
       {children}
       {props?.maxLength && (
-        <small className="hint" title={t("validation:maxLength", { max: props.maxLength })}>
-          {props.value?.length ?? 0} / {props.maxLength}
-        </small>
+        <CharacterLimit
+          max={props.maxLength}
+          current={isValidElement(control) && control.type === "textarea" ? props.value?.length ?? 0 : undefined}
+        />
       )}
     </label>
+  );
+}
+export function CharacterLimit({ max, current }: { max: number; current?: number }) {
+  const { t } = useTranslation();
+  return (
+    <small className="hint character-limit" title={t("validation:characterLimit", { max })}>
+      {current === undefined ? t("validation:characterLimit", { max }) : `${current} / ${max}`}
+    </small>
   );
 }
 export function PageHead({

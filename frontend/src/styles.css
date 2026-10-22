@@ -763,6 +763,25 @@ footer small {
   color: var(--muted);
   line-height: 1.7;
 }
+.character-limit {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.limit-control {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.search-limit-control,
+.inline-search .limit-control {
+  flex: 1;
+}
+.category-limit-control {
+  flex: 1 1 220px;
+}
 .field-error,
 .phone-region {
   max-width: 100%;
@@ -1203,6 +1222,10 @@ footer small {
   font-size: 13px;
 }
 .management-row input:not([type="checkbox"]) {
+  max-width: 430px;
+}
+.management-row .limit-control {
+  width: 100%;
   max-width: 430px;
 }
 .editor {
@@ -1727,7 +1750,7 @@ table h3 {
     grid-column: 1;
     grid-row: 1;
   }
-  .search-bar input {
+  .search-bar .search-limit-control {
     grid-column: 2 / 4;
     grid-row: 1;
     width: 100%;
