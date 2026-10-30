@@ -46,7 +46,7 @@ test("capacidad compartida se respeta durante toda la duración", () => {
 
 // Pure schema regression tests: no database connection or persistence.
 import { z } from "zod";
-import { businessPhone, fullName, registrationPhone, text, parse } from "../src/common/validation";
+import { businessPhone, fullName, registrationPhone, securePassword, text, parse } from "../src/common/validation";
 import { errorResponse } from "../src/common/errors";
 test("registration name and phone enforce the public contract", () => {
   for (const value of ["Erick Mora", "María José Núñez", "Jean-Pierre Mora"])
@@ -61,6 +61,13 @@ test("registration name and phone enforce the public contract", () => {
     () => parse(z.object({ name: fullName, phone: registrationPhone }), { name: "454566565", phone: "cderrtr55654" }),
     (err: any) => err.status === 400 && err.response?.fieldErrors?.length === 2,
   );
+});
+test("new passwords enforce length and composition without restricting special characters", () => {
+  for (const value of ["a", "Aa123456789", "123456", "password", "abcdefgh1234", " ".repeat(12)])
+    assert.equal(securePassword.safeParse(value).success, false, value);
+  for (const value of ["Reserva2026Segura!", "Aa1234567890", "Aa1" + "!".repeat(69)])
+    assert.equal(securePassword.safeParse(value).success, true, String(value.length));
+  assert.equal(securePassword.safeParse("Aa1" + "!".repeat(70)).success, false);
 });
 test("business phone validates CR formats and rejects invalid numbering", () => {
   for (const value of ["87026279", "8702 6279", "8702-6279", "+506 8702 6279"])
@@ -156,5 +163,38 @@ test("manual HTTP requests cannot bypass phone or length validation (isolated AP
     const response = await fetch(url + "/api/owner/business", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...profile, descriptionEn: "a".repeat(2501) }) });
     assert.equal(response.status, 400);
     assert.equal(writes, 4);
+  } finally { await app.close(); }
+});
+
+import { AuthController } from "../src/auth/auth.controller";
+test("manual HTTP requests cannot bypass the new-password policy (isolated API)", async () => {
+  let writes = 0;
+  const auth = {
+    register: async (data: object) => { writes++; return { token: "qa", user: data }; },
+    resetPassword: async () => { writes++; return { ok: true }; },
+  };
+  @Module({ controllers: [AuthController], providers: [{ provide: AuthService, useValue: auth }] })
+  class IsolatedAuthApi {}
+  const app = await NestFactory.create(IsolatedAuthApi, { logger: false });
+  app.setGlobalPrefix("api");
+  app.useGlobalFilters(new Errors());
+  try {
+    await app.listen(0, "127.0.0.1");
+    const url = await app.getUrl();
+    const register = (password: string) => fetch(url + "/api/auth/register", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "QA Reserva", email: "qa@example.test", password, phone: "", role: "CLIENT" }),
+    });
+    const reset = (password: string) => fetch(url + "/api/auth/reset-password", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "a".repeat(64), password }),
+    });
+    for (const password of ["a", "Aa123456789", "123456", "password", "abcdefgh1234"]) {
+      assert.equal((await register(password)).status, 400, password);
+      assert.equal((await reset(password)).status, 400, password);
+    }
+    assert.equal((await register("Reserva2026Segura!")).status, 201);
+    assert.equal((await reset("Reserva2026Segura!")).status, 201);
+    assert.equal(writes, 2);
   } finally { await app.close(); }
 });

@@ -6,6 +6,7 @@
   "characterLimit": "Maximum {{max}} characters",
   "invalid": "Check the value of this field.",
   "passwordMismatch": "The passwords do not match.",
+  "passwordRequirements": "Password must contain at least 12 characters, one uppercase letter, one lowercase letter, and one number.",
   "invalidPhone": "Invalid phone number.",
   "invalidFullName": "Invalid full name.",
   "countryRegion": "Country/region"

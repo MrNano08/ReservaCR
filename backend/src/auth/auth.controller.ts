@@ -12,7 +12,7 @@ import { Throttle } from "@nestjs/throttler";
 import { z } from "zod";
 import { AuthService, safeUser } from "./auth.service";
 import { AuthGuard, AuthRequest } from "./guard";
-import { parse, email, fullName, registrationPhone } from "../common/validation";
+import { parse, email, fullName, registrationPhone, securePassword } from "../common/validation";
 import { config } from "../common/config";
 const cookie = {
   httpOnly: true,
@@ -34,7 +34,7 @@ export class AuthController {
         .object({
           name: fullName,
           email,
-          password: z.string().min(10).max(72),
+          password: securePassword,
           phone: registrationPhone.default(""),
           role: z.enum(["CLIENT", "BUSINESS"]).default("CLIENT"),
         })
@@ -57,7 +57,7 @@ export class AuthController {
   @Post("reset-password")
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   reset(@Body() body: unknown) {
-    const d = parse(z.object({ token: z.string().regex(/^[a-f0-9]{64}$/), password: z.string().min(10).max(72) }).strict(), body);
+    const d = parse(z.object({ token: z.string().regex(/^[a-f0-9]{64}$/), password: securePassword }).strict(), body);
     return this.auth.resetPassword(d.token, d.password);
   }
   @Post("login")

@@ -10,6 +10,8 @@ import {
   filterNameInput,
   filterPhoneInput,
   hasOnlyPhoneCharacters,
+  passwordPattern,
+  validSecurePassword,
   validFullName,
   validRegistrationPhone,
 } from "../utils/registration";
@@ -77,14 +79,18 @@ export default function Auth({ register = false }: { register?: boolean }) {
           {...validation}
           onSubmit={async (e) => {
             e.preventDefault();
+            const d = Object.fromEntries(new FormData(e.currentTarget));
             if (register && (!validFullName(name) || !validRegistrationPhone(phone))) {
               setNameTouched(true);
               setPhoneTouched(true);
               return;
             }
+            if (register && !validSecurePassword(String(d.password))) {
+              setError("validation:passwordRequirements");
+              return;
+            }
             setBusy(true);
             setError("");
-            const d = Object.fromEntries(new FormData(e.currentTarget));
             try {
               const u = register
                 ? await auth.register({ ...d, role })
@@ -173,13 +179,15 @@ export default function Auth({ register = false }: { register?: boolean }) {
               name="password"
               type="password"
               autoComplete={register ? "new-password" : "current-password"}
-              minLength={register ? 10 : 1}
+              minLength={register ? 12 : 1}
               maxLength={72}
+              pattern={register ? passwordPattern : undefined}
               required
               placeholder={
-                register ? t("auth:fields.passwordMinimum", { min: 10 }) : t("auth:fields.passwordPlaceholder")
+                register ? t("auth:fields.passwordMinimum", { min: 12 }) : t("auth:fields.passwordPlaceholder")
               }
             />
+            {register && <small className="hint">{t("validation:passwordRequirements")}</small>}
           </Field>
           <ErrorBox message={error} />
           <button className="button full" disabled={busy}>

@@ -7,6 +7,7 @@ export function validationMessage(input: HTMLInputElement | HTMLTextAreaElement 
   if (validity.typeMismatch && input.type === "email") return i18n.t("validation:invalidEmail");
   if (validity.tooShort && "minLength" in input) return i18n.t("validation:minLength", { min: input.minLength });
   if (validity.tooLong && "maxLength" in input) return i18n.t("validation:maxLength", { max: input.maxLength });
+  if (validity.patternMismatch && input.type === "password") return i18n.t("validation:passwordRequirements");
   return i18n.t("validation:invalid");
 }
 export function useLocalizedValidation() {

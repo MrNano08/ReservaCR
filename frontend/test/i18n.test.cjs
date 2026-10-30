@@ -19,6 +19,7 @@ const format = require('../src/utils/format.ts');
 const errors = require('../src/i18n/errors.ts');
 const { validationMessage } = require('../src/i18n/validation.ts');
 const { bilingualText, categoryLabel } = require('../src/i18n/content.ts');
+const { validSecurePassword } = require('../src/utils/registration.ts');
 
 test('dynamic content switches immediately, preserves Spanish and ignores blank English', async () => {
   const category = { id: 'unchanged-id', name: 'Comida', code: 'food' };
@@ -61,7 +62,15 @@ test('missing English entry falls back to Spanish and plurals interpolate', asyn
   finally { english.loading = saved; }
   assert.equal(i18n.t('catalog:results', { count: 1 }), '1 business found');
   assert.equal(i18n.t('catalog:results', { count: 2 }), '2 businesses found');
-  assert.equal(i18n.t('auth:fields.passwordMinimum', { min: 10 }), 'At least 10 characters');
+  assert.equal(i18n.t('auth:fields.passwordMinimum', { min: 12 }), 'At least 12 characters');
+  assert.equal(i18n.t('validation:passwordRequirements'), 'Password must contain at least 12 characters, one uppercase letter, one lowercase letter, and one number.');
+});
+test('new passwords enforce the same length and composition policy in the frontend', () => {
+  for (const value of ['a', 'Aa123456789', '123456', 'password', 'abcdefgh1234', ' '.repeat(12)])
+    assert.equal(validSecurePassword(value), false, value);
+  for (const value of ['Reserva2026Segura!', 'Aa1234567890', 'Aa1' + '!'.repeat(69)])
+    assert.equal(validSecurePassword(value), true, value.length);
+  assert.equal(validSecurePassword('Aa1' + '!'.repeat(70)), false);
 });
 test('both languages have the same nonempty keys and interpolation variables', () => {
   function flatten(obj, prefix = '') {
@@ -203,6 +212,7 @@ test('password recovery submits the current resolved UI language and preserves r
     'react-router-dom': { Link: 'a', useSearchParams: () => [new URLSearchParams({ token })] },
     '../i18n/validation': { useLocalizedValidation: () => ({}) },
     '../components/UI': { ErrorBox: 'aside', Field: 'label' },
+    '../utils/registration': { passwordPattern: '', validSecurePassword },
     '../services/api': { send, api: async (url, options) => calls.push({ url, body: JSON.parse(options.body) }) },
   };
   new Function('require', 'module', 'exports', output)(name => dependencies[name] ?? require(name), module, module.exports);

@@ -7,6 +7,12 @@ import {
 
 const fullNameCharacters = /^[\p{L}\p{M}\p{Zs}'’\p{Pd}]+$/u;
 const phoneCharacters = /^[+\d\p{Zs}()\-]+$/u;
+export const passwordPattern = "(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{12,72}";
+
+export function validSecurePassword(value: string): boolean {
+  return value.length >= 12 && value.length <= 72
+    && /[A-Z]/.test(value) && /[a-z]/.test(value) && /[0-9]/.test(value);
+}
 
 export function validFullName(value: string): boolean {
   if (value.length > 100) return false;

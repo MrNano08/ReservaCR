@@ -6,6 +6,7 @@
   "characterLimit": "Máximo {{max}} caracteres",
   "invalid": "Revisa el valor de este campo.",
   "passwordMismatch": "Las contraseñas no coinciden.",
+  "passwordRequirements": "La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula y un número.",
   "invalidPhone": "Número de teléfono inválido.",
   "invalidFullName": "Nombre completo inválido.",
   "countryRegion": "País/región"

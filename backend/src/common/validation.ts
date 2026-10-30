@@ -27,6 +27,10 @@ export const id = (value: string) => parse(idSchema, value);
 export const text = (max: number, min = 1) =>
   z.string().max(max).trim().min(min);
 export const email = z.string().max(190).trim().toLowerCase().email();
+export const securePassword = z.string().min(12).max(72)
+  .regex(/[A-Z]/, "La contraseña debe incluir una mayúscula.")
+  .regex(/[a-z]/, "La contraseña debe incluir una minúscula.")
+  .regex(/[0-9]/, "La contraseña debe incluir un número.");
 const fullNameCharacters = /^[\p{L}\p{M}\p{Zs}'’\p{Pd}]+$/u;
 const phoneCharacters = /^[+\d\p{Zs}()\-]+$/u;
 export const fullName = z.string().max(100).trim().refine(value =>
